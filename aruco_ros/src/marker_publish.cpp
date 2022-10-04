@@ -88,7 +88,7 @@ public:
     if (useCamInfo_)
     {
       sensor_msgs::CameraInfoConstPtr msg = ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/camera_info", nh_); //, 10.0);
-
+      ROS_INFO("Can get Camera INFO\n");
       nh_.param<double>("marker_size", marker_size_, 0.05);
       nh_.param<bool>("image_is_rectified", useRectifiedImages_, true);
       nh_.param<std::string>("reference_frame", reference_frame_, "");
@@ -182,6 +182,7 @@ public:
         // if there is camera info let's do 3D stuff
         if (useCamInfo_)
         {
+          ROS_INFO("Can get Camera INFO\n");
           // get the current transform from the camera frame to output ref frame
           tf::StampedTransform cameraToReference;
           cameraToReference.setIdentity();

@@ -49,6 +49,9 @@
 #include <dynamic_reconfigure/server.h>
 #include <aruco_ros/ArucoThresholdConfig.h>
 
+#include <tf/transform_datatypes.h>
+#include <geometry_msgs/Vector3.h>
+
 class ArucoSimple
 {
 private:
@@ -67,6 +70,9 @@ private:
   ros::Publisher position_pub;
   ros::Publisher marker_pub; // rviz visualization marker
   ros::Publisher pixel_pub;
+
+  ros::Publisher marker_rpy_pub;
+
   std::string marker_frame;
   std::string camera_frame;
   std::string reference_frame;
@@ -135,6 +141,8 @@ public:
     position_pub = nh.advertise<geometry_msgs::Vector3Stamped>("position", 100);
     marker_pub = nh.advertise<visualization_msgs::Marker>("marker", 10);
     pixel_pub = nh.advertise<geometry_msgs::PointStamped>("pixel", 10);
+
+    marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
 
     nh.param<double>("marker_size", marker_size, 0.05);
     nh.param<int>("marker_id", marker_id, 300);
@@ -211,64 +219,120 @@ public:
         for (std::size_t i = 0; i < markers.size(); ++i)
         {
           // only publishing the selected marker
-          if (markers[i].id == marker_id)
+          // if (markers[i].id == marker_id)
+          // {
+          tf::Transform transform = aruco_ros::arucoMarker2Tf(markers[i]);
+          tf::StampedTransform cameraToReference;
+          cameraToReference.setIdentity();
+
+          if (reference_frame != camera_frame)
           {
-            tf::Transform transform = aruco_ros::arucoMarker2Tf(markers[i]);
-            tf::StampedTransform cameraToReference;
-            cameraToReference.setIdentity();
-
-            if (reference_frame != camera_frame)
-            {
-              getTransform(reference_frame, camera_frame, cameraToReference);
-            }
-
-            transform = static_cast<tf::Transform>(cameraToReference) * static_cast<tf::Transform>(rightToLeft)
-                * transform;
-
-            tf::StampedTransform stampedTransform(transform, curr_stamp, reference_frame, marker_frame);
-            br.sendTransform(stampedTransform);
-            geometry_msgs::PoseStamped poseMsg;
-            tf::poseTFToMsg(transform, poseMsg.pose);
-            poseMsg.header.frame_id = reference_frame;
-            poseMsg.header.stamp = curr_stamp;
-            pose_pub.publish(poseMsg);
-
-            geometry_msgs::TransformStamped transformMsg;
-            tf::transformStampedTFToMsg(stampedTransform, transformMsg);
-            transform_pub.publish(transformMsg);
-
-            geometry_msgs::Vector3Stamped positionMsg;
-            positionMsg.header = transformMsg.header;
-            positionMsg.vector = transformMsg.transform.translation;
-            position_pub.publish(positionMsg);
-
-            geometry_msgs::PointStamped pixelMsg;
-            pixelMsg.header = transformMsg.header;
-            pixelMsg.point.x = markers[i].getCenter().x;
-            pixelMsg.point.y = markers[i].getCenter().y;
-            pixelMsg.point.z = 0;
-            pixel_pub.publish(pixelMsg);
-
-            // publish rviz marker representing the ArUco marker patch
-            visualization_msgs::Marker visMarker;
-            visMarker.header = transformMsg.header;
-            visMarker.id = 1;
-            visMarker.type = visualization_msgs::Marker::CUBE;
-            visMarker.action = visualization_msgs::Marker::ADD;
-            visMarker.pose = poseMsg.pose;
-            visMarker.scale.x = marker_size;
-            visMarker.scale.y = marker_size;
-            visMarker.scale.z = 0.001;
-            visMarker.color.r = 1.0;
-            visMarker.color.g = 0;
-            visMarker.color.b = 0;
-            visMarker.color.a = 1.0;
-            visMarker.lifetime = ros::Duration(3.0);
-            marker_pub.publish(visMarker);
-
+            fprintf(stderr,"reference_frame != camera_frame\n");
+            getTransform(reference_frame, camera_frame, cameraToReference);
           }
+
+          transform = static_cast<tf::Transform>(cameraToReference) * static_cast<tf::Transform>(rightToLeft) * transform;
+
+          // camera child TF
+          static tf::TransformBroadcaster br_left_cam_child;
+          tf::Transform transform_left_cam_child;
+          transform_left_cam_child.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+          tf::Quaternion q;
+          // 3.141592653589793
+          // 1.57079632679489655
+          q.setRPY(-1.57079632679489655, 0, -1.57079632679489655);
+          transform_left_cam_child.setRotation(q);
+          br_left_cam_child.sendTransform (tf::StampedTransform(transform_left_cam_child, ros::Time::now(), "left_camera_link", "left_camera_child"));
+
+          // tf2_ros::TransformBroadcaster tfb;
+          // geometry_msgs::TransformStamped test_pose;
+          // test_pose.header.stamp = ros::Time::now();
+          // test_pose.header.frame_id = "left_camera_link";
+          // test_pose.child_frame_id ="test";
+          // // test_pose.transform.rotation.w = 1.0;
+          // tfb.sendTransform(test_pose);
+          // transform.setRotation(q);
+
+
+          // tf::StampedTransform stampedTransform(transform, curr_stamp, reference_frame, marker_frame);
+          std::string marker_frame_with_id = marker_frame + "_" + std::to_string(markers[i].id);
+          tf::StampedTransform stampedTransform(transform, curr_stamp, "left_camera_child", marker_frame_with_id.c_str());
+
+
+          // // left_camera_child에서 20cm 떨어진 tf 생성 테스트
+          // static tf::TransformBroadcaster br_test;
+          // tf::Transform transform_test;
+          // transform_test.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+          // tf::Vector3 t(0.0, 0.0, 0.2); // z축 기준 20cm
+          // transform_test.setOrigin(t);
+          // br_test.sendTransform (tf::StampedTransform(transform_test, ros::Time::now(), "left_camera_child", "test_tf"));
+
+
+          // marker TF 생성
+          br.sendTransform(stampedTransform);
+          geometry_msgs::PoseStamped poseMsg;
+          tf::poseTFToMsg(transform, poseMsg.pose);
+          poseMsg.header.frame_id = "left_camera_child";
+          // poseMsg.header.frame_id = reference_frame;
+          poseMsg.header.stamp = curr_stamp;
+          pose_pub.publish(poseMsg);
+
+          fprintf(stderr,"poseMsg : \n(x,y,z)=(%f,%f,%f) \n(x,y,z,w)=(%f,%f,%f,%f)\n", 
+                  poseMsg.pose.position.x, poseMsg.pose.position.y, poseMsg.pose.position.z,
+                  poseMsg.pose.orientation.x, poseMsg.pose.orientation.y, poseMsg.pose.orientation.z, poseMsg.pose.orientation.w);
+
+          // quaternion to rpy
+          double roll, pitch, yaw;
+          tf::Quaternion q_marker(poseMsg.pose.orientation.x,
+                                  poseMsg.pose.orientation.y,
+                                  poseMsg.pose.orientation.z,
+                                  poseMsg.pose.orientation.w);
+          tf::Matrix3x3 m_marker(q_marker);
+          m_marker.getRPY(roll, pitch, yaw);
+          geometry_msgs::Vector3 rpy;
+          rpy.x = roll;
+          rpy.y = pitch;
+          rpy.z = yaw;
+          fprintf(stderr,"RPY : \n(r,p,y)=(%f,%f,%f)\n", roll, pitch, yaw);
+          marker_rpy_pub.publish(rpy);
+
+
+          geometry_msgs::TransformStamped transformMsg;
+          tf::transformStampedTFToMsg(stampedTransform, transformMsg);
+          transform_pub.publish(transformMsg);
+
+          geometry_msgs::Vector3Stamped positionMsg;
+          positionMsg.header = transformMsg.header;
+          positionMsg.vector = transformMsg.transform.translation;
+          position_pub.publish(positionMsg);
+
+          geometry_msgs::PointStamped pixelMsg;
+          pixelMsg.header = transformMsg.header;
+          pixelMsg.point.x = markers[i].getCenter().x;
+          pixelMsg.point.y = markers[i].getCenter().y;
+          pixelMsg.point.z = 0;
+          pixel_pub.publish(pixelMsg);
+
+          // publish rviz marker representing the ArUco marker patch
+          visualization_msgs::Marker visMarker;
+          visMarker.header = transformMsg.header;
+          visMarker.id = markers[i].id;
+          visMarker.type = visualization_msgs::Marker::CUBE;
+          visMarker.action = visualization_msgs::Marker::ADD;
+          visMarker.pose = poseMsg.pose;
+          visMarker.scale.x = marker_size;
+          visMarker.scale.y = marker_size;
+          visMarker.scale.z = 0.001;
+          visMarker.color.r = 1.0;
+          visMarker.color.g = 1.0;
+          visMarker.color.b = 1.0;
+          visMarker.color.a = 1.0;
+          visMarker.lifetime = ros::Duration(3.0);
+          marker_pub.publish(visMarker);
+
+          // }
           // but drawing all the detected markers
-          markers[i].draw(inImage, cv::Scalar(0, 0, 255), 2);
+          markers[i].draw(inImage, cv::Scalar(0, 0, 255), 5);
         }
 
         // draw a 3d cube in each marker if there is 3d info

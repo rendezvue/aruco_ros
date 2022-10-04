@@ -21,24 +21,17 @@ Changelog for package aruco
 * forcing opencv3 build for kinetic
 * Contributors: Andrea Ponza, Bence Magyar, Christopher Hrabia, Jordi Pages, Victor Lopez
 
-3.0.3 (2022-05-16)
+2.1.4 (2022-05-16)
 ------------------
 
-3.0.2 (2022-04-05)
+2.1.3 (2022-04-05)
 ------------------
-* Merge pull request #103 from bmagyar/make-sai-maintainer
-  Make Sai maintainer of all aruco_ros packages
 * Make Sai maintainer of all
 * Update license tags in the package.xml
 * Contributors: Bence Magyar, Sai Kishor Kothakota
 
-3.0.1 (2022-02-10)
+2.1.2 (2022-02-10)
 ------------------
-
-3.0.0 (2021-07-16)
-------------------
-* fixes pal-robotics/aruco_ros/#89
-* Contributors: 444lhc
 
 2.1.1 (2020-09-17)
 ------------------
