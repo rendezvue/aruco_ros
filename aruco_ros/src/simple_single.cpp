@@ -52,6 +52,9 @@
 #include <tf/transform_datatypes.h>
 #include <geometry_msgs/Vector3.h>
 
+#include <boost/thread.hpp>
+
+#include <std_msgs/Float32MultiArray.h>
 class ArucoSimple
 {
 private:
@@ -71,6 +74,9 @@ private:
   ros::Publisher marker_pub; // rviz visualization marker
   ros::Publisher pixel_pub;
 
+  //rdv mecanum wheel direct controller
+  ros::Publisher pub_omniwheel_velocity_QR_Marker;
+
   // ros::Publisher marker_rpy_pub;
 
   std::string marker_frame;
@@ -88,7 +94,10 @@ private:
 
   dynamic_reconfigure::Server<aruco_ros::ArucoThresholdConfig> dyn_rec_server;
 
+
+
 public:
+  void thread_destination_cmd_vel();
   ArucoSimple() :
       cam_info_received(false), nh("~"), it(nh)
   {
@@ -141,7 +150,7 @@ public:
     position_pub = nh.advertise<geometry_msgs::Vector3Stamped>("position", 100);
     marker_pub = nh.advertise<visualization_msgs::Marker>("marker", 10);
     pixel_pub = nh.advertise<geometry_msgs::PointStamped>("pixel", 10);
-
+    pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("destination_velocity", 10);
     // marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
 
     nh.param<double>("marker_size", marker_size, 0.05);
@@ -163,6 +172,91 @@ public:
     dyn_rec_server.setCallback(boost::bind(&ArucoSimple::reconf_callback, this, _1, _2));
   }
 
+  bool make_destination_cmd_vel(std::string camera_tf, std::string destination_tf)
+  {
+    tf::TransformListener tfListener;
+    tf::StampedTransform camera_to_destination_tf;
+
+    if(camera_tf != destination_tf)
+    {
+      try
+      {
+        ROS_INFO("INFO INFO HJPARK %s, %s",camera_tf.c_str(), destination_tf.c_str() );
+        if( tfListener.waitForTransform(camera_tf, destination_tf, ros::Time(0), ros::Duration(1)) )
+        {
+          tfListener.lookupTransform(camera_tf, destination_tf, ros::Time(0), camera_to_destination_tf);
+        }
+        else
+        {
+          ROS_ERROR("HJPARK: waitForTransform failed");
+        }
+      }
+      catch ( std::exception &e)
+      {
+        ROS_ERROR("make_destination_cmd_vel, transform error!");
+      }
+    }
+
+    tf::Vector3 origin = camera_to_destination_tf.getOrigin();
+
+    
+    float dRad = atan2(origin.x(), origin.y());
+
+
+    float max_vel = 0.3;
+    float lin_x = origin.x() / (abs(origin.x()) + abs(origin.y())) * max_vel;
+    float lin_y = -(origin.y() / (abs(origin.x()) + abs(origin.y())) * max_vel);
+    
+    float max_yaw = 0.1;
+
+    float calc_dRad = 3.141592 - dRad;
+    if( abs(calc_dRad) > max_yaw )
+    {
+      calc_dRad = max_yaw;
+    }
+    else if( abs(calc_dRad) < max_yaw)
+    {
+      calc_dRad = -max_yaw;
+    }
+
+    
+
+    fprintf(stderr,"[curtime:%ld][timestamp:%ld] TEST!! %f, %f, %f /  yaw ( rad: %f / deg : %f ) , lin_x = %f, lin_y = %f\n",
+                  ros::Time::now().toNSec(),
+                  camera_to_destination_tf.stamp_.toNSec(),
+                  origin.x() ,origin.y(), origin.z(), calc_dRad , ((calc_dRad)*180/3.141592),
+                  lin_x, lin_y);
+
+    ros::Duration calc_time = ros::Time::now() - camera_to_destination_tf.stamp_;
+
+    long limit_time = 100000000;
+    if( calc_time.toNSec() <= 100000000 )
+    {
+      fprintf(stderr, "duration time : %ld\n", calc_time.toNSec());
+
+      // ros pub( cmd_vel )
+      // /omni ( x) 
+      // /시간계산전용토픽ㄱ주소
+
+      double wheels_k = 0.521500; // = wheels_k_;
+      double wheels_radius_ = 0.089;
+
+      double w0_vel = 1.0 / wheels_radius_ * (lin_x - lin_y - wheels_k * calc_dRad);
+      double w1_vel = 1.0 / wheels_radius_ * (lin_x + lin_y - wheels_k * calc_dRad);
+      double w2_vel = 1.0 / wheels_radius_ * (lin_x - lin_y + wheels_k * calc_dRad);
+      double w3_vel = 1.0 / wheels_radius_ * (lin_x + lin_y + wheels_k * calc_dRad);
+
+      std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+      omniwheel_velocity_QR_Marker.data.push_back(w0_vel);
+      omniwheel_velocity_QR_Marker.data.push_back(w1_vel);
+      omniwheel_velocity_QR_Marker.data.push_back(w2_vel);
+      omniwheel_velocity_QR_Marker.data.push_back(w3_vel);
+      pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+
+    }
+
+  }
+
   bool make_destination_tf(tf::TransformBroadcaster &br, std::string marker_frame_id)
   {
       tf::Transform destination_tf;
@@ -178,6 +272,10 @@ public:
       
       tf::StampedTransform stampedTransform_destination(destination_tf, ros::Time::now(), marker_frame_id.c_str(), "destination_tf");
       br.sendTransform(stampedTransform_destination);
+
+      //make_destination_cmd_vel("left_camera_child", "destination_tf");
+      
+      return true;
   }
 
   bool getTransform(const std::string& refFrame, const std::string& childFrame, tf::StampedTransform& transform)
@@ -260,6 +358,12 @@ public:
           q.setRPY(-1.57079632679489655, 0, -1.57079632679489655);
           transform_left_cam_child.setRotation(q);
           br_left_cam_child.sendTransform (tf::StampedTransform(transform_left_cam_child, ros::Time::now(), "left_camera_link", "left_camera_child"));
+
+          q.setRPY(3.141592, 0, -1.57079632679489655);
+          transform_left_cam_child.setRotation(q);
+          br_left_cam_child.sendTransform (tf::StampedTransform(transform_left_cam_child, ros::Time::now(), "left_camera_link", "left_camera_baselink_direction"));
+
+
 
           // tf2_ros::TransformBroadcaster tfb;
           // geometry_msgs::TransformStamped test_pose;
@@ -416,11 +520,21 @@ public:
   }
 };
 
+void ArucoSimple::thread_destination_cmd_vel()
+{
+  while(1)
+  {
+    usleep(1000*30);
+    make_destination_cmd_vel("left_camera_baselink_direction", "destination_tf");
+  }
+}
+
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "aruco_simple");
 
   ArucoSimple node;
-
+  boost::thread( boost::bind( &ArucoSimple::thread_destination_cmd_vel, &node ) );
   ros::spin();
 }

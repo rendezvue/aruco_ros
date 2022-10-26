@@ -1,9 +1,14 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(aruco_ros)
 
+set(CMAKE_PREFIX_PATH "/opt/ros/melodic")
+set(qt_build_DIR "/opt/ros/melodic/share/qt_build/cmake")
+set(roscpp_DIR "/opt/ros/melodic/share/roscpp/cmake")
+
 find_package(OpenCV REQUIRED)
 
 find_package(catkin REQUIRED COMPONENTS
+  qt_build
   cv_bridge
   dynamic_reconfigure
   geometry_msgs
@@ -16,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   visualization_msgs
 )
-
+find_package(Boost REQUIRED system filesystem date_time thread ) #
 generate_dynamic_reconfigure_options(
   cfg/ArucoThreshold.cfg
 )
@@ -35,14 +40,16 @@ include_directories(
   SYSTEM
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIR}
 )
+
 add_library(aruco_ros_utils src/aruco_ros_utils.cpp)
 target_link_libraries(aruco_ros_utils ${catkin_LIBRARIES})
 
 add_executable(single src/simple_single.cpp
                       src/aruco_ros_utils.cpp)
 add_dependencies(single ${PROJECT_NAME}_gencfg)
-target_link_libraries(single ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+target_link_libraries(single ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_LIBRARIES})
 
 add_executable(double src/simple_double.cpp
                       src/aruco_ros_utils.cpp)
