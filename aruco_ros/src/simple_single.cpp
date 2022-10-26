@@ -71,7 +71,7 @@ private:
   ros::Publisher marker_pub; // rviz visualization marker
   ros::Publisher pixel_pub;
 
-  ros::Publisher marker_rpy_pub;
+  // ros::Publisher marker_rpy_pub;
 
   std::string marker_frame;
   std::string camera_frame;
@@ -142,7 +142,7 @@ public:
     marker_pub = nh.advertise<visualization_msgs::Marker>("marker", 10);
     pixel_pub = nh.advertise<geometry_msgs::PointStamped>("pixel", 10);
 
-    marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
+    // marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
 
     nh.param<double>("marker_size", marker_size, 0.05);
     nh.param<int>("marker_id", marker_id, 300);
@@ -276,7 +276,7 @@ public:
           // poseMsg.header.frame_id = reference_frame;
           poseMsg.header.stamp = curr_stamp;
           pose_pub.publish(poseMsg);
-
+#if 0
           fprintf(stderr,"poseMsg : \n(x,y,z)=(%f,%f,%f) \n(x,y,z,w)=(%f,%f,%f,%f)\n", 
                   poseMsg.pose.position.x, poseMsg.pose.position.y, poseMsg.pose.position.z,
                   poseMsg.pose.orientation.x, poseMsg.pose.orientation.y, poseMsg.pose.orientation.z, poseMsg.pose.orientation.w);
@@ -294,8 +294,8 @@ public:
           rpy.y = pitch;
           rpy.z = yaw;
           fprintf(stderr,"RPY : \n(r,p,y)=(%f,%f,%f)\n", roll, pitch, yaw);
-          marker_rpy_pub.publish(rpy);
-
+          // marker_rpy_pub.publish(rpy);
+#endif
 
           geometry_msgs::TransformStamped transformMsg;
           tf::transformStampedTFToMsg(stampedTransform, transformMsg);

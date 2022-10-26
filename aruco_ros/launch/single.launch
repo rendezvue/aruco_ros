@@ -1,6 +1,6 @@
 <launch>
 
-    <arg name="markerId"        default="0"/>
+    <arg name="markerId"        default="21"/>
     <arg name="markerSize"      default="0.044"/>    <!-- in m -->
     <arg name="eye"             default="left"/>
     <arg name="marker_frame"    default="marker"/>
@@ -24,6 +24,10 @@
         
         <param name="marker_frame"       value="$(arg marker_frame)" />
         <param name="corner_refinement"  value="$(arg corner_refinement)" />
+
+        <remap from="/camera_info" to="/camera/color/camera_info" />
+        <param name="camera_frame"       value="left_camera_link"/>
+        <remap from="/image" to="/camera/color/image_raw" />
     </node>
 
     <!--- Run Rviz-->
