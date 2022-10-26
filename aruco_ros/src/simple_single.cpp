@@ -199,27 +199,33 @@ public:
 
     tf::Vector3 origin = camera_to_destination_tf.getOrigin();
 
-    
-    float dRad = atan2(origin.x(), origin.y());
+    tf::Quaternion quat = camera_to_destination_tf.getRotation();
 
+    tf::Matrix3x3 m(quat);
+    double roll,pitch,yaw;
+    m.getRPY(roll,pitch,yaw);
 
-    float max_vel = 0.3;
+    fprintf(stderr, "r p y (%f / %f/ %f)\n",roll, pitch, yaw);
+
+    float max_vel = 0.02;
     float lin_x = origin.x() / (abs(origin.x()) + abs(origin.y())) * max_vel;
     float lin_y = -(origin.y() / (abs(origin.x()) + abs(origin.y())) * max_vel);
     
-    float max_yaw = 0.1;
+    float calc_dRad = -yaw;
 
-    float calc_dRad = 3.141592 - dRad;
-    if( abs(calc_dRad) > max_yaw )
+    float max_yaw = 0.02;
+    if( calc_dRad > max_yaw )
     {
       calc_dRad = max_yaw;
     }
-    else if( abs(calc_dRad) < max_yaw)
+    else if( calc_dRad < -max_yaw)
     {
       calc_dRad = -max_yaw;
     }
-
     
+    // lin_x = 0;
+    // lin_y =0;
+    // calc_dRad = 0;
 
     fprintf(stderr,"[curtime:%ld][timestamp:%ld] TEST!! %f, %f, %f /  yaw ( rad: %f / deg : %f ) , lin_x = %f, lin_y = %f\n",
                   ros::Time::now().toNSec(),
@@ -228,6 +234,8 @@ public:
                   lin_x, lin_y);
 
     ros::Duration calc_time = ros::Time::now() - camera_to_destination_tf.stamp_;
+
+    
 
     long limit_time = 100000000;
     if( calc_time.toNSec() <= 100000000 )
@@ -261,13 +269,13 @@ public:
   {
       tf::Transform destination_tf;
       destination_tf.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
-      tf::Vector3 position_xyz(0.0, 0.0, 0.2); // z축 기준 20cm
+      tf::Vector3 position_xyz(0.0, 0.0, 0.3); // z축 기준 20cm
       destination_tf.setOrigin(position_xyz);
 
       tf::Quaternion dest_quat;
       // 3.141592653589793
       // 1.57079632679489655
-      dest_quat.setRPY(0,0,0);
+      dest_quat.setRPY(1.541592,0,1.541592);
       destination_tf.setRotation(dest_quat);
       
       tf::StampedTransform stampedTransform_destination(destination_tf, ros::Time::now(), marker_frame_id.c_str(), "destination_tf");
