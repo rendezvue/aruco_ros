@@ -163,6 +163,23 @@ public:
     dyn_rec_server.setCallback(boost::bind(&ArucoSimple::reconf_callback, this, _1, _2));
   }
 
+  bool make_destination_tf(tf::TransformBroadcaster &br, std::string marker_frame_id)
+  {
+      tf::Transform destination_tf;
+      destination_tf.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+      tf::Vector3 position_xyz(0.0, 0.0, 0.2); // z축 기준 20cm
+      destination_tf.setOrigin(position_xyz);
+
+      tf::Quaternion dest_quat;
+      // 3.141592653589793
+      // 1.57079632679489655
+      dest_quat.setRPY(0,0,0);
+      destination_tf.setRotation(dest_quat);
+      
+      tf::StampedTransform stampedTransform_destination(destination_tf, ros::Time::now(), marker_frame_id.c_str(), "destination_tf");
+      br.sendTransform(stampedTransform_destination);
+  }
+
   bool getTransform(const std::string& refFrame, const std::string& childFrame, tf::StampedTransform& transform)
   {
     std::string errMsg;
@@ -256,7 +273,7 @@ public:
 
           // tf::StampedTransform stampedTransform(transform, curr_stamp, reference_frame, marker_frame);
           std::string marker_frame_with_id = marker_frame + "_" + std::to_string(markers[i].id);
-          tf::StampedTransform stampedTransform(transform, curr_stamp, "left_camera_child", marker_frame_with_id.c_str());
+          tf::StampedTransform stampedTransform(transform, ros::Time::now(), "left_camera_child", marker_frame_with_id.c_str());
 
 
           // // left_camera_child에서 20cm 떨어진 tf 생성 테스트
@@ -270,6 +287,9 @@ public:
 
           // marker TF 생성
           br.sendTransform(stampedTransform);
+          make_destination_tf(br, marker_frame_with_id);
+
+          // just publish topic
           geometry_msgs::PoseStamped poseMsg;
           tf::poseTFToMsg(transform, poseMsg.pose);
           poseMsg.header.frame_id = "left_camera_child";
