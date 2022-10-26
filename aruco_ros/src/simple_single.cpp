@@ -55,6 +55,9 @@
 #include <boost/thread.hpp>
 
 #include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Bool.h>
+#include <std_msgs/String.h>
+
 class ArucoSimple
 {
 private:
@@ -73,7 +76,10 @@ private:
   ros::Publisher position_pub;
   ros::Publisher marker_pub; // rviz visualization marker
   ros::Publisher pixel_pub;
+  ros::Publisher qr_cmd_pub;
 
+  ros::Publisher lift_flag;
+  ros::Publisher lift_cmd;
   //rdv mecanum wheel direct controller
   ros::Publisher pub_omniwheel_velocity_QR_Marker;
 
@@ -94,7 +100,9 @@ private:
 
   dynamic_reconfigure::Server<aruco_ros::ArucoThresholdConfig> dyn_rec_server;
 
-
+  std_msgs::Bool qr_corr;
+  std_msgs::Bool lift_bool;
+  std_msgs::String lift_val;
 
 public:
   void thread_destination_cmd_vel();
@@ -152,6 +160,10 @@ public:
     pixel_pub = nh.advertise<geometry_msgs::PointStamped>("pixel", 10);
     pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("destination_velocity", 10);
     // marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
+    qr_cmd_pub = nh.advertise<std_msgs::Bool>("/aruco_single/qr_cmd", 1);
+
+    lift_flag = nh.advertise<std_msgs::Bool>("/arduino/lift/flag", 1);
+    lift_cmd = nh.advertise<std_msgs::String>("/arduino/lift/cmd", 1);
 
     nh.param<double>("marker_size", marker_size, 0.05);
     nh.param<int>("marker_id", marker_id, 300);
@@ -174,6 +186,8 @@ public:
 
   bool make_destination_cmd_vel(std::string camera_tf, std::string destination_tf)
   {
+    
+    static tf::TransformBroadcaster filter_tf_br;
     tf::TransformListener tfListener;
     tf::StampedTransform camera_to_destination_tf;
 
@@ -196,6 +210,26 @@ public:
         ROS_ERROR("make_destination_cmd_vel, transform error!");
       }
     }
+    static tf::Vector3 origin_sum = camera_to_destination_tf.getOrigin();
+    static tf::Quaternion quat_sum = camera_to_destination_tf.getRotation();
+    static int filter_tf_sum_cnt=0;
+    {
+      
+      tf::Vector3 origin = camera_to_destination_tf.getOrigin();
+      tf::Quaternion quat = camera_to_destination_tf.getRotation();
+      
+      origin_sum = origin_sum + origin;
+      quat_sum = quat_sum + quat;
+      filter_tf_sum_cnt++;
+      tf::Transform filter_tf;
+      filter_tf.setOrigin(origin_sum/filter_tf_sum_cnt);
+      filter_tf.setRotation(quat_sum/filter_tf_sum_cnt);
+
+      tf::StampedTransform filter_stamp(filter_tf, ros::Time::now(),camera_tf.c_str(), "destination_tf_filter" );
+
+      filter_tf_br.sendTransform(filter_stamp);
+    }
+
 
     tf::Vector3 origin = camera_to_destination_tf.getOrigin();
 
@@ -206,6 +240,9 @@ public:
     m.getRPY(roll,pitch,yaw);
 
     fprintf(stderr, "r p y (%f / %f/ %f)\n",roll, pitch, yaw);
+
+
+
 
     float max_vel = 0.02;
     float lin_x = origin.x() / (abs(origin.x()) + abs(origin.y())) * max_vel;
@@ -260,16 +297,51 @@ public:
       omniwheel_velocity_QR_Marker.data.push_back(w2_vel);
       omniwheel_velocity_QR_Marker.data.push_back(w3_vel);
       pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
-
+      
+      qr_corr.data = true;
+#if 0
+      if ( origin.z() < -0.01 )
+      {
+        // lift_bool.data = true;
+        // lift_val.data = "w";
+      }
+      else if ( origin.z() > 0.01 )
+      {
+        // lift_bool.data = true;
+        // lift_val.data = "x";
+      }
+      else if ( origin.z() > -0.01 && origin.z() < 0.01)
+      {
+        // lift_bool.data = true;
+        // lift_val.data = "s";
+      }
+#endif
     }
-
+    else 
+    {
+      // lift_bool.data = false;
+      // lift_val.data = "s";
+      qr_corr.data = false;
+      std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+      omniwheel_velocity_QR_Marker.data.push_back(0);
+      omniwheel_velocity_QR_Marker.data.push_back(0);
+      omniwheel_velocity_QR_Marker.data.push_back(0);
+      omniwheel_velocity_QR_Marker.data.push_back(0);
+      pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+      tf::Vector3 origin_sum = tf::Vector3();
+      tf::Quaternion quat_sum = tf::Quaternion();
+      filter_tf_sum_cnt = 0;
+    }
+    qr_cmd_pub.publish(qr_corr);
+    // lift_flag.publish(lift_bool);
+    // lift_cmd.publish(lift_val);
   }
 
   bool make_destination_tf(tf::TransformBroadcaster &br, std::string marker_frame_id)
   {
       tf::Transform destination_tf;
       destination_tf.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
-      tf::Vector3 position_xyz(0.0, 0.0, 0.3); // z축 기준 20cm
+      tf::Vector3 position_xyz(0.0, 0.0, 0.15); // z축 기준 20cm
       destination_tf.setOrigin(position_xyz);
 
       tf::Quaternion dest_quat;
