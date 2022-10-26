@@ -57,6 +57,7 @@
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/String.h>
+#include <std_srvs/Trigger.h>
 
 class ArucoSimple
 {
@@ -68,6 +69,7 @@ private:
   aruco::MarkerDetector mDetector;
   std::vector<aruco::Marker> markers;
   ros::Subscriber cam_info_sub;
+  ros::Subscriber sub_QR_localization_Trigger;
   bool cam_info_received;
   image_transport::Publisher image_pub;
   image_transport::Publisher debug_pub;
@@ -82,6 +84,7 @@ private:
   ros::Publisher lift_cmd;
   //rdv mecanum wheel direct controller
   ros::Publisher pub_omniwheel_velocity_QR_Marker;
+  ros::Publisher pub_QR_localization_Complete;
 
   // ros::Publisher marker_rpy_pub;
 
@@ -106,6 +109,7 @@ private:
 
 public:
   void thread_destination_cmd_vel();
+  bool service_QR_localization(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
   ArucoSimple() :
       cam_info_received(false), nh("~"), it(nh)
   {
@@ -159,6 +163,7 @@ public:
     marker_pub = nh.advertise<visualization_msgs::Marker>("marker", 10);
     pixel_pub = nh.advertise<geometry_msgs::PointStamped>("pixel", 10);
     pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("destination_velocity", 10);
+    pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("QR_localization_complete",10);
     // marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
     qr_cmd_pub = nh.advertise<std_msgs::Bool>("/aruco_single/qr_cmd", 1);
 
@@ -184,157 +189,192 @@ public:
     dyn_rec_server.setCallback(boost::bind(&ArucoSimple::reconf_callback, this, _1, _2));
   }
 
+ 
+
   bool make_destination_cmd_vel(std::string camera_tf, std::string destination_tf)
   {
-    
-    static tf::TransformBroadcaster filter_tf_br;
-    tf::TransformListener tfListener;
-    tf::StampedTransform camera_to_destination_tf;
-
-    if(camera_tf != destination_tf)
+    while(1)
     {
-      try
+      usleep(1000*30); // 30ms
+      static tf::TransformBroadcaster filter_tf_br;
+      tf::TransformListener tfListener;
+      tf::StampedTransform camera_to_destination_tf;
+
+      if(camera_tf != destination_tf)
       {
-        ROS_INFO("INFO INFO HJPARK %s, %s",camera_tf.c_str(), destination_tf.c_str() );
-        if( tfListener.waitForTransform(camera_tf, destination_tf, ros::Time(0), ros::Duration(1)) )
+        try
         {
-          tfListener.lookupTransform(camera_tf, destination_tf, ros::Time(0), camera_to_destination_tf);
+          ROS_INFO("INFO INFO HJPARK %s, %s",camera_tf.c_str(), destination_tf.c_str() );
+          if( tfListener.waitForTransform(camera_tf, destination_tf, ros::Time(0), ros::Duration(1)) )
+          {
+            tfListener.lookupTransform(camera_tf, destination_tf, ros::Time(0), camera_to_destination_tf);
+          }
+          else
+          {
+            ROS_ERROR("HJPARK: waitForTransform failed");
+          }
+        }
+        catch ( std::exception &e)
+        {
+          ROS_ERROR("make_destination_cmd_vel, transform error!");
+        }
+      }
+      
+      tf::Transform filter_tf;
+      static tf::Vector3 origin_sum = camera_to_destination_tf.getOrigin();
+      static tf::Quaternion quat_sum = camera_to_destination_tf.getRotation();
+      static int filter_tf_sum_cnt=0;
+      {
+        
+        tf::Vector3 origin = camera_to_destination_tf.getOrigin();
+        tf::Quaternion quat = camera_to_destination_tf.getRotation();     
+        if( filter_tf_sum_cnt == 0 )
+        { 
+          origin_sum = origin;
+          quat_sum = quat;
         }
         else
         {
-          ROS_ERROR("HJPARK: waitForTransform failed");
+          float rate_A = 0.9;
+          float rate_B = 0.1;
+          origin_sum = (origin_sum * rate_A) + (origin * rate_B);
+          quat_sum = (quat_sum * rate_A) + (quat * rate_B);
+          // origin_sum = origin_sum + origin;
+          // quat_sum = quat_sum + quat ;
         }
+        filter_tf_sum_cnt++;
+
+        filter_tf.setOrigin(origin_sum);
+        filter_tf.setRotation(quat_sum);
+
+        tf::StampedTransform filter_stamp(filter_tf, ros::Time::now(),camera_tf.c_str(), "destination_tf_filter" );
+
+        filter_tf_br.sendTransform(filter_stamp);
       }
-      catch ( std::exception &e)
-      {
-        ROS_ERROR("make_destination_cmd_vel, transform error!");
-      }
-    }
-    static tf::Vector3 origin_sum = camera_to_destination_tf.getOrigin();
-    static tf::Quaternion quat_sum = camera_to_destination_tf.getRotation();
-    static int filter_tf_sum_cnt=0;
-    {
+
+
+      // tf::Vector3 origin = camera_to_destination_tf.getOrigin();
+      // tf::Quaternion quat = camera_to_destination_tf.getRotation();
+      tf::Vector3 origin = filter_tf.getOrigin();
+      tf::Quaternion quat = filter_tf.getRotation();
+
+
+      tf::Matrix3x3 m(quat);
+      double roll,pitch,yaw;
+      m.getRPY(roll,pitch,yaw);
+
+      fprintf(stderr, "r p y (%f / %f/ %f)\n",roll, pitch, yaw);
+
+
+
+
+      float max_vel = 0.02;
+      float lin_x = origin.x() / (abs(origin.x()) + abs(origin.y())) * max_vel;
+      float lin_y = -(origin.y() / (abs(origin.x()) + abs(origin.y())) * max_vel);
       
-      tf::Vector3 origin = camera_to_destination_tf.getOrigin();
-      tf::Quaternion quat = camera_to_destination_tf.getRotation();
-      
-      origin_sum = origin_sum + origin;
-      quat_sum = quat_sum + quat;
-      filter_tf_sum_cnt++;
-      tf::Transform filter_tf;
-      filter_tf.setOrigin(origin_sum/filter_tf_sum_cnt);
-      filter_tf.setRotation(quat_sum/filter_tf_sum_cnt);
+      float calc_dRad = -yaw;
 
-      tf::StampedTransform filter_stamp(filter_tf, ros::Time::now(),camera_tf.c_str(), "destination_tf_filter" );
-
-      filter_tf_br.sendTransform(filter_stamp);
-    }
-
-
-    tf::Vector3 origin = camera_to_destination_tf.getOrigin();
-
-    tf::Quaternion quat = camera_to_destination_tf.getRotation();
-
-    tf::Matrix3x3 m(quat);
-    double roll,pitch,yaw;
-    m.getRPY(roll,pitch,yaw);
-
-    fprintf(stderr, "r p y (%f / %f/ %f)\n",roll, pitch, yaw);
-
-
-
-
-    float max_vel = 0.02;
-    float lin_x = origin.x() / (abs(origin.x()) + abs(origin.y())) * max_vel;
-    float lin_y = -(origin.y() / (abs(origin.x()) + abs(origin.y())) * max_vel);
-    
-    float calc_dRad = -yaw;
-
-    float max_yaw = 0.02;
-    if( calc_dRad > max_yaw )
-    {
-      calc_dRad = max_yaw;
-    }
-    else if( calc_dRad < -max_yaw)
-    {
-      calc_dRad = -max_yaw;
-    }
-    
-    // lin_x = 0;
-    // lin_y =0;
-    // calc_dRad = 0;
-
-    fprintf(stderr,"[curtime:%ld][timestamp:%ld] TEST!! %f, %f, %f /  yaw ( rad: %f / deg : %f ) , lin_x = %f, lin_y = %f\n",
-                  ros::Time::now().toNSec(),
-                  camera_to_destination_tf.stamp_.toNSec(),
-                  origin.x() ,origin.y(), origin.z(), calc_dRad , ((calc_dRad)*180/3.141592),
-                  lin_x, lin_y);
-
-    ros::Duration calc_time = ros::Time::now() - camera_to_destination_tf.stamp_;
-
-    
-
-    long limit_time = 100000000;
-    if( calc_time.toNSec() <= 100000000 )
-    {
-      fprintf(stderr, "duration time : %ld\n", calc_time.toNSec());
-
-      // ros pub( cmd_vel )
-      // /omni ( x) 
-      // /시간계산전용토픽ㄱ주소
-
-      double wheels_k = 0.521500; // = wheels_k_;
-      double wheels_radius_ = 0.089;
-
-      double w0_vel = 1.0 / wheels_radius_ * (lin_x - lin_y - wheels_k * calc_dRad);
-      double w1_vel = 1.0 / wheels_radius_ * (lin_x + lin_y - wheels_k * calc_dRad);
-      double w2_vel = 1.0 / wheels_radius_ * (lin_x - lin_y + wheels_k * calc_dRad);
-      double w3_vel = 1.0 / wheels_radius_ * (lin_x + lin_y + wheels_k * calc_dRad);
-
-      std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
-      omniwheel_velocity_QR_Marker.data.push_back(w0_vel);
-      omniwheel_velocity_QR_Marker.data.push_back(w1_vel);
-      omniwheel_velocity_QR_Marker.data.push_back(w2_vel);
-      omniwheel_velocity_QR_Marker.data.push_back(w3_vel);
-      pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
-      
-      qr_corr.data = true;
-#if 0
-      if ( origin.z() < -0.01 )
+      float max_yaw = 0.02;
+      if( calc_dRad > max_yaw )
       {
-        // lift_bool.data = true;
-        // lift_val.data = "w";
+        calc_dRad = max_yaw;
       }
-      else if ( origin.z() > 0.01 )
+      else if( calc_dRad < -max_yaw)
       {
-        // lift_bool.data = true;
-        // lift_val.data = "x";
+        calc_dRad = -max_yaw;
       }
-      else if ( origin.z() > -0.01 && origin.z() < 0.01)
+      
+      // lin_x = 0;
+      // lin_y =0;
+      // calc_dRad = 0;
+
+      fprintf(stderr,"[curtime:%ld][timestamp:%ld] TEST!! %f, %f, %f /  yaw ( rad: %f / deg : %f ) , lin_x = %f, lin_y = %f\n",
+                    ros::Time::now().toNSec(),
+                    camera_to_destination_tf.stamp_.toNSec(),
+                    origin.x() ,origin.y(), origin.z(), calc_dRad , ((calc_dRad)*180/3.141592),
+                    lin_x, lin_y);
+
+      ros::Duration calc_time = ros::Time::now() - camera_to_destination_tf.stamp_;
+
+      if( abs(origin.x()) < 0.01 && 
+          abs(origin.y()) < 0.01 &&
+          abs((calc_dRad)*180/3.141592) < 1 )
+          {
+            std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+            omniwheel_velocity_QR_Marker.data.push_back(0);
+            omniwheel_velocity_QR_Marker.data.push_back(0);
+            omniwheel_velocity_QR_Marker.data.push_back(0);
+            omniwheel_velocity_QR_Marker.data.push_back(0);
+            pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+
+            return true;
+          }
+          //abs(origin.z()) < 0.01) &&
+      
+
+      long limit_time = 100000000;
+      if( calc_time.toNSec() <= 100000000 )
       {
-        // lift_bool.data = true;
+        fprintf(stderr, "duration time : %ld\n", calc_time.toNSec());
+
+        // ros pub( cmd_vel )
+        // /omni ( x) 
+        // /시간계산전용토픽ㄱ주소
+
+        double wheels_k = 0.521500; // = wheels_k_;
+        double wheels_radius_ = 0.089;
+
+        double w0_vel = 1.0 / wheels_radius_ * (lin_x - lin_y - wheels_k * calc_dRad);
+        double w1_vel = 1.0 / wheels_radius_ * (lin_x + lin_y - wheels_k * calc_dRad);
+        double w2_vel = 1.0 / wheels_radius_ * (lin_x - lin_y + wheels_k * calc_dRad);
+        double w3_vel = 1.0 / wheels_radius_ * (lin_x + lin_y + wheels_k * calc_dRad);
+
+        std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+        omniwheel_velocity_QR_Marker.data.push_back(w0_vel);
+        omniwheel_velocity_QR_Marker.data.push_back(w1_vel);
+        omniwheel_velocity_QR_Marker.data.push_back(w2_vel);
+        omniwheel_velocity_QR_Marker.data.push_back(w3_vel);
+        pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+        
+        qr_corr.data = true;
+  #if 0
+        if ( origin.z() < -0.01 )
+        {
+          // lift_bool.data = true;
+          // lift_val.data = "w";
+        }
+        else if ( origin.z() > 0.01 )
+        {
+          // lift_bool.data = true;
+          // lift_val.data = "x";
+        }
+        else if ( origin.z() > -0.01 && origin.z() < 0.01)
+        {
+          // lift_bool.data = true;
+          // lift_val.data = "s";
+        }
+  #endif
+      }
+      else 
+      {
+        // lift_bool.data = false;
         // lift_val.data = "s";
+        qr_corr.data = false;
+        std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+        origin_sum = tf::Vector3();
+        quat_sum = tf::Quaternion();
+        filter_tf_sum_cnt = 0;
+        return false;
       }
-#endif
+      qr_cmd_pub.publish(qr_corr);
+      // lift_flag.publish(lift_bool);
+      // lift_cmd.publish(lift_val);
     }
-    else 
-    {
-      // lift_bool.data = false;
-      // lift_val.data = "s";
-      qr_corr.data = false;
-      std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
-      omniwheel_velocity_QR_Marker.data.push_back(0);
-      omniwheel_velocity_QR_Marker.data.push_back(0);
-      omniwheel_velocity_QR_Marker.data.push_back(0);
-      omniwheel_velocity_QR_Marker.data.push_back(0);
-      pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
-      tf::Vector3 origin_sum = tf::Vector3();
-      tf::Quaternion quat_sum = tf::Quaternion();
-      filter_tf_sum_cnt = 0;
-    }
-    qr_cmd_pub.publish(qr_corr);
-    // lift_flag.publish(lift_bool);
-    // lift_cmd.publish(lift_val);
   }
 
   bool make_destination_tf(tf::TransformBroadcaster &br, std::string marker_frame_id)
@@ -600,21 +640,30 @@ public:
   }
 };
 
+bool ArucoSimple::service_QR_localization(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+{
+  
+  boost::thread( boost::bind( &ArucoSimple::thread_destination_cmd_vel, this ) );
+  fprintf(stderr,"service_QR_localization service call !!!\n");
+  return true;
+}
+
 void ArucoSimple::thread_destination_cmd_vel()
 {
-  while(1)
-  {
-    usleep(1000*30);
-    make_destination_cmd_vel("left_camera_baselink_direction", "destination_tf");
-  }
+  bool result =  make_destination_cmd_vel("left_camera_baselink_direction", "destination_tf");
+  std_msgs::Bool service_results;
+  service_results.data = result;
+  pub_QR_localization_Complete.publish(service_results);
 }
 
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "aruco_simple");
-
+  ros::NodeHandle nh;
   ArucoSimple node;
-  boost::thread( boost::bind( &ArucoSimple::thread_destination_cmd_vel, &node ) );
+
+  ros::ServiceServer QR_localization = nh.advertiseService("service_QR_localization", &ArucoSimple::service_QR_localization, &node);
+  
   ros::spin();
 }
