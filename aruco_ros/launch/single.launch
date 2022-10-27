@@ -1,14 +1,20 @@
 <launch>
-
     <arg name="markerId"        default="0"/>
     <arg name="markerSize"      default="0.044"/>    <!-- in m -->
-    <arg name="eye"             default="left"/>
     <arg name="marker_frame"    default="marker"/>
     <arg name="ref_frame"       default=""/>  <!-- leave empty and the pose will be published wrt param parent_name -->
     <arg name="corner_refinement" default="LINES" /> <!-- NONE, HARRIS, LINES, SUBPIX -->
     
+    <arg name="camera_frame" default="left"/>
+    <arg name="camera" default="camera"/>
+    <arg name="serial_no" default=""/>
+
+    <arg name="multi" default="false"/>
     
-    <include file="$(find realsense2_camera)/launch/rs_camera.launch"/>
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+        <!-- <arg name="camera" value="$(arg camera)"/> -->
+        <arg name="serial_no" value="$(arg serial_no)"/>
+    </include>
 
     <node pkg="aruco_ros" type="single" name="aruco_single">
         <!-- <remap from="/camera_info" to="/camera/color/camera_info" />
@@ -17,22 +23,18 @@
         <param name="marker_size"        value="$(arg markerSize)"/>
         <param name="marker_id"          value="$(arg markerId)"/>
         <param name="reference_frame"    value="$(arg ref_frame)"/>   <!-- frame in which the marker pose will be refered -->
-        <!-- <param name="camera_frame"       value="stereo_gazebo_$(arg eye)_camera_optical_frame"/> -->
-        <param name="use_camera_info" value="true"/>
-        <!-- thkim test -->
-        <!-- <param name="camera_frame"       value="left_camera_link"/>
-        <remap from="/camera_info" to="/mecanum_rb5/left_camera/camera_info" />
-        <remap from="/image" to="/mecanum_rb5/left_camera/left_image_raw" /> -->
-        
         <param name="marker_frame"       value="$(arg marker_frame)" />
         <param name="corner_refinement"  value="$(arg corner_refinement)" />
 
-        <remap from="/camera_info" to="/camera/color/camera_info" />
-        <param name="camera_frame"       value="left_camera_link"/>
-        <remap from="/image" to="/camera/color/image_raw" />
+        <param name="use_camera_info" value="true"/>
+        <param name="camera_frame"       value="$(arg camera_frame)_camera_link"/>
+        <remap from="/camera_info" to="/$(arg camera)/camera/color/camera_info" />
+        <remap from="/image" to="/$(arg camera)/camera/color/image_raw" />
     </node>
 
     <!--- Run Rviz-->
-    <node pkg="rviz" type="rviz" name="aruco_rviz" args="-d $(find aruco_ros)/rviz/display_aruco.rviz" />
+    <group unless="$(arg multi)">
+        <node pkg="rviz" type="rviz" name="aruco_rviz" args="-d $(find aruco_ros)/rviz/display_aruco.rviz" />
+    </group>
 </launch>
 

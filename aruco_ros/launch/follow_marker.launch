@@ -15,15 +15,15 @@
     </include> -->
 
     <!-- front rs d435 : 913422071281 -->
-    <!-- <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="camera" value="front"/>
         <arg name="serial_no" value="913422071281"/>
-    </include> -->
+    </include>
     <!-- left rs d435 : 938422071303 -->
-    <include file="$(find realsense2_camera)/launch/rs_camera.launch">
+    <!-- <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <arg name="camera" value="left"/>
         <arg name="serial_no" value="938422071303"/>
-    </include>
+    </include> -->
 
     <node pkg="aruco_ros" type="single" name="aruco_single">
         <!-- <remap from="/camera_info" to="/camera/color/camera_info" />
@@ -42,9 +42,9 @@
         <param name="marker_frame"       value="$(arg marker_frame)" />
         <param name="corner_refinement"  value="$(arg corner_refinement)" />
 
-        <remap from="/camera_info" to="/left/color/camera_info" />
-        <param name="camera_frame"       value="left_camera_link"/>
-        <remap from="/image" to="/left/color/image_raw" />
+        <remap from="/camera_info" to="/front/color/camera_info" />
+        <param name="camera_frame"       value="front_camera_link"/>
+        <remap from="/image" to="/front/color/image_raw" />
     </node>
 
     <!--- Run Rviz-->

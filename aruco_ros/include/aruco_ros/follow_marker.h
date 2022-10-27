@@ -21,7 +21,7 @@
 #include <std_msgs/String.h>
 #include <std_srvs/Trigger.h>
 
-enum follow_camera{LEFT_CAM, RIGHT_CAM,FRONT_CAM, BACK_CAM};
+enum follow_camera{NONE_CAM, LEFT_CAM, RIGHT_CAM,FRONT_CAM, BACK_CAM};
 
 class FollowMarker{
 private:
@@ -30,7 +30,7 @@ private:
     ros::Subscriber sub_QR_localization_Request;
     ros::ServiceServer srv_QR_localization;
     std::string m_camera_child_link_name;
-    follow_camera m_cam_direction = LEFT_CAM;
+    follow_camera m_cam_direction = NONE_CAM;
     std::string m_QR_localization_cmd;
     bool m_service_stop=false;
     void Ros_Sub_FollowInterface(const std_msgs::String::ConstPtr& msg);

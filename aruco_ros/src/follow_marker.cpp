@@ -8,9 +8,9 @@ FollowMarker::FollowMarker()
 {
     ros::NodeHandle nh;
     srv_QR_localization = nh.advertiseService("service_QR_localization", &FollowMarker::Ros_Srv_FollowInterface, this);
-    sub_QR_localization_Request = nh.subscribe("/QR_localization_Request", 1, &FollowMarker::Ros_Sub_FollowInterface, this);
+    sub_QR_localization_Request = nh.subscribe("QR_localization_Request", 1, &FollowMarker::Ros_Sub_FollowInterface, this);
     pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("/omniwheel/velocity", 10);
-    pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("/QR_localization_complete",10);
+    pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("QR_localization_complete",10);
 }
 FollowMarker::~FollowMarker()
 {
@@ -87,7 +87,7 @@ bool FollowMarker::Run_FollowMarker()
         usleep(1000*30);//30ms
         bool ret;     
         tf::Transform filter_tf;
-        ret = Make_Filtered_Destination(m_camera_child_link_name,"destination_tf", origin_filter , quat_filter, filter_tf, filter_tf_sum_cnt);
+        ret = Make_Filtered_Destination(m_camera_child_link_name, DESTINATION_TF_NAME+m_camera_child_link_name , origin_filter , quat_filter, filter_tf, filter_tf_sum_cnt);
         if( ret == false ) return false;
         //ret = Check_Goal_Reached(origin_filter , quat_filter);
         //if( ret == true ) return true; // true : goal reached
@@ -103,7 +103,7 @@ bool FollowMarker::Run_FollowMarker()
 
 bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform transform, int marker_id)
 {
-    std::string marker_frame_with_id = "marker_frame";// + "_" + std::to_string(marker_id).c_str();
+    std::string marker_frame_with_id = "marker_frame_";// + "_" + std::to_string(marker_id).c_str();
     
     tf::Transform transform_cam_child;
     
@@ -130,9 +130,13 @@ bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform 
     {
         m_camera_child_link_name = "back_camera_child";
     }
-    tf::StampedTransform stampedTransform(transform, ros::Time::now(), m_camera_child_link_name, marker_frame_with_id.c_str());
-    br.sendTransform (stampedTransform);
-    Make_Destination_TF(br,marker_frame_with_id);
+    if( m_cam_direction != NONE_CAM )
+    {
+        std::string marker_frame_name = marker_frame_with_id+m_camera_child_link_name;
+        tf::StampedTransform stampedTransform(transform, ros::Time::now(), m_camera_child_link_name, marker_frame_name);
+        br.sendTransform (stampedTransform);
+        Make_Destination_TF(br,marker_frame_name);
+    }
 }
 
 bool FollowMarker::Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id)
@@ -146,7 +150,7 @@ bool FollowMarker::Make_Destination_TF(tf::TransformBroadcaster &br, std::string
     dest_quat.setRPY(0,0,0);
     destination_tf.setRotation(dest_quat);
     
-    tf::StampedTransform stampedTransform_destination(destination_tf, ros::Time::now(), marker_frame_id.c_str(), DESTINATION_TF_NAME);
+    tf::StampedTransform stampedTransform_destination(destination_tf, ros::Time::now(), marker_frame_id.c_str(), DESTINATION_TF_NAME+m_camera_child_link_name);
     br.sendTransform(stampedTransform_destination);
 
     //make_destination_cmd_vel("left_camera_child", "destination_tf");
@@ -205,7 +209,7 @@ bool FollowMarker::Make_Filtered_Destination(const std::string camera_tf, const 
         filter_tf.setOrigin(origin_sum);
         filter_tf.setRotation(quat_sum);
 
-        tf::StampedTransform filter_stamp(filter_tf, ros::Time::now(),camera_tf.c_str(), DESTINATION_TF_FILTERED_NAME );
+        tf::StampedTransform filter_stamp(filter_tf, ros::Time::now(),camera_tf.c_str(), DESTINATION_TF_FILTERED_NAME+m_camera_child_link_name );
 
         filter_tf_br.sendTransform(filter_stamp);
     }

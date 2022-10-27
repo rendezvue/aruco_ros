@@ -168,7 +168,7 @@ public:
     // pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("destination_velocity", 10);
     pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("/omniwheel/velocity", 10);
     
-    pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("QR_localization_complete",10);
+    //pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("QR_localization_complete",10);
     // marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
     qr_cmd_pub = nh.advertise<std_msgs::Bool>("/aruco_single/qr_cmd", 1);
 
