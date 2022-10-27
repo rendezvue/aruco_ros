@@ -87,7 +87,7 @@ bool FollowMarker::Run_FollowMarker()
         usleep(1000*30);//30ms
         bool ret;     
         tf::Transform filter_tf;
-        ret = Make_Filtered_Destination("left_camera_child","destination_tf", origin_filter , quat_filter, filter_tf, filter_tf_sum_cnt);
+        ret = Make_Filtered_Destination(m_camera_child_link_name,"destination_tf", origin_filter , quat_filter, filter_tf, filter_tf_sum_cnt);
         if( ret == false ) return false;
         //ret = Check_Goal_Reached(origin_filter , quat_filter);
         //if( ret == true ) return true; // true : goal reached
@@ -104,7 +104,7 @@ bool FollowMarker::Run_FollowMarker()
 bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform transform, int marker_id)
 {
     std::string marker_frame_with_id = "marker_frame";// + "_" + std::to_string(marker_id).c_str();
-    std::string camera_child_link_name;
+    
     tf::Transform transform_cam_child;
     
     transform_cam_child.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
@@ -113,23 +113,23 @@ bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform 
     transform_cam_child.setRotation(q);
     if( m_cam_direction == LEFT_CAM )
     {
-        camera_child_link_name = "left_camera_child";
+        m_camera_child_link_name = "left_camera_child";
         br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "left_camera_link", "left_camera_child"));
     }
     else if( m_cam_direction == RIGHT_CAM )
     {
-        camera_child_link_name = "right_camera_child";
+        m_camera_child_link_name = "right_camera_child";
         br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "right_camera_link", "right_camera_child"));
     }
     else if( m_cam_direction == FRONT_CAM )
     {
-        camera_child_link_name = "front_camera_child";
+        m_camera_child_link_name = "front_camera_child";
     }
     else if( m_cam_direction == BACK_CAM )
     {
-        camera_child_link_name = "back_camera_child";
+        m_camera_child_link_name = "back_camera_child";
     }
-    tf::StampedTransform stampedTransform(transform, ros::Time::now(), camera_child_link_name, marker_frame_with_id.c_str());
+    tf::StampedTransform stampedTransform(transform, ros::Time::now(), m_camera_child_link_name, marker_frame_with_id.c_str());
     br.sendTransform (stampedTransform);
     Make_Destination_TF(br,marker_frame_with_id);
 }
@@ -257,6 +257,11 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
 
     float front_direction = origin.x();
     float side_direction = origin.z();
+    if( m_cam_direction == RIGHT_CAM )
+    {
+        front_direction = -origin.x();
+        side_direction = -origin.z();
+    }
 
     max_vel_y = abs(side_direction / 0.3 * 0.1);
     if( max_vel_y > 0.1 ) max_vel_y = 0.1;

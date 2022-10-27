@@ -29,7 +29,7 @@ private:
     ros::Publisher pub_QR_localization_Complete;
     ros::Subscriber sub_QR_localization_Request;
     ros::ServiceServer srv_QR_localization;
-    
+    std::string m_camera_child_link_name;
     follow_camera m_cam_direction = LEFT_CAM;
     std::string m_QR_localization_cmd;
     bool m_service_stop=false;
