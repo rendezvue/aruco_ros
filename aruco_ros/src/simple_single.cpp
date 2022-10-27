@@ -108,7 +108,7 @@ private:
   std_msgs::String lift_val;
 
 
-  FollowMarker fm;
+  FollowMarker m_follow_marker;
   
 public:
   void thread_destination_cmd_vel();
@@ -524,7 +524,9 @@ public:
 
           // marker TF 생성
           br.sendTransform(stampedTransform);
-          make_destination_tf(br, marker_frame_with_id);
+          
+          m_follow_marker.Make_Destination_TF(br,marker_frame_with_id);
+          //make_destination_tf(br, marker_frame_with_id);
 
           // just publish topic
           geometry_msgs::PoseStamped poseMsg;

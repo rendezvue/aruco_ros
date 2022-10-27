@@ -1,5 +1,4 @@
 #include "aruco_ros/follow_marker.h"
-
 #include <boost/thread.hpp>
 
 #define DESTINATION_TF_NAME "destination_tf"
@@ -9,6 +8,8 @@ FollowMarker::FollowMarker()
 {
     ros::NodeHandle nh;
     srv_QR_localization = nh.advertiseService("service_QR_localization", &FollowMarker::Ros_Srv_FollowInterface, this);
+    pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("/omniwheel/velocity", 10);
+    pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("QR_localization_complete",10);
 }
 FollowMarker::~FollowMarker()
 {
@@ -58,7 +59,7 @@ bool FollowMarker::Run_FollowMarker()
     }
 }
 
-bool Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id)
+bool FollowMarker::Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id)
 {
     tf::Transform destination_tf;
     destination_tf.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );

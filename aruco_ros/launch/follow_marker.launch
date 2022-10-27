@@ -42,9 +42,9 @@
         <param name="marker_frame"       value="$(arg marker_frame)" />
         <param name="corner_refinement"  value="$(arg corner_refinement)" />
 
-        <remap from="/camera_info" to="/camera/color/camera_info" />
+        <remap from="/camera_info" to="/left/color/camera_info" />
         <param name="camera_frame"       value="left_camera_link"/>
-        <remap from="/image" to="/camera/color/image_raw" />
+        <remap from="/image" to="/left/color/image_raw" />
     </node>
 
     <!--- Run Rviz-->
