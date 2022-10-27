@@ -58,7 +58,7 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/String.h>
 #include <std_srvs/Trigger.h>
-
+#include "aruco_ros/follow_marker.h"
 class ArucoSimple
 {
 private:
@@ -107,6 +107,9 @@ private:
   std_msgs::Bool lift_bool;
   std_msgs::String lift_val;
 
+
+  FollowMarker fm;
+  
 public:
   void thread_destination_cmd_vel();
   bool service_QR_localization(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
@@ -673,7 +676,9 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ArucoSimple node;
 
-  ros::ServiceServer QR_localization = nh.advertiseService("service_QR_localization", &ArucoSimple::service_QR_localization, &node);
+ // ros::ServiceServer QR_localization = nh.advertiseService("service_QR_localization", &ArucoSimple::service_QR_localization, &node);
   
+
+
   ros::spin();
 }

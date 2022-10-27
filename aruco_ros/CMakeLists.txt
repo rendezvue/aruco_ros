@@ -21,7 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   visualization_msgs
 )
-find_package(Boost REQUIRED system filesystem date_time thread ) #
+#find_package(Boost REQUIRED system filesystem date_time thread ) #
 generate_dynamic_reconfigure_options(
   cfg/ArucoThreshold.cfg
 )
@@ -47,14 +47,15 @@ add_library(aruco_ros_utils src/aruco_ros_utils.cpp)
 target_link_libraries(aruco_ros_utils ${catkin_LIBRARIES})
 
 add_executable(single src/simple_single.cpp
-                      src/aruco_ros_utils.cpp)
+                      src/aruco_ros_utils.cpp
+                      src/follow_marker.cpp)
 add_dependencies(single ${PROJECT_NAME}_gencfg)
 target_link_libraries(single ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(double src/simple_double.cpp
-                      src/aruco_ros_utils.cpp)
-add_dependencies(double ${PROJECT_NAME}_gencfg)
-target_link_libraries(double ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+#add_executable(double src/simple_double.cpp
+#                      src/aruco_ros_utils.cpp)
+#add_dependencies(double ${PROJECT_NAME}_gencfg)
+#target_link_libraries(double ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 add_executable(marker_publisher src/marker_publish.cpp
                                 src/aruco_ros_utils.cpp)
@@ -65,7 +66,8 @@ target_link_libraries(marker_publisher ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 ## Install ##
 #############
 
-install(TARGETS single double marker_publisher aruco_ros_utils
+# install(TARGETS single double marker_publisher aruco_ros_utils
+install(TARGETS single marker_publisher aruco_ros_utils
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
