@@ -114,16 +114,17 @@ bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform 
     if( m_cam_direction == LEFT_CAM )
     {
         m_camera_child_link_name = "left_camera_child";
-        br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "left_camera_link", "left_camera_child"));
+        br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "left_camera_link", m_camera_child_link_name));
     }
     else if( m_cam_direction == RIGHT_CAM )
     {
         m_camera_child_link_name = "right_camera_child";
-        br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "right_camera_link", "right_camera_child"));
+        br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "right_camera_link", m_camera_child_link_name));
     }
     else if( m_cam_direction == FRONT_CAM )
     {
         m_camera_child_link_name = "front_camera_child";
+        br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "front_camera_link", m_camera_child_link_name));
     }
     else if( m_cam_direction == BACK_CAM )
     {
@@ -257,11 +258,22 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
 
     float front_direction = origin.x();
     float side_direction = origin.z();
+    float calc_dRad = -pitch;
     if( m_cam_direction == RIGHT_CAM )
     {
         front_direction = -origin.x();
         side_direction = -origin.z();
     }
+    else if( m_cam_direction == FRONT_CAM )
+    {
+        front_direction = origin.z();
+        side_direction = -origin.x();
+    }
+    
+    
+    max_vel_x = abs(front_direction / 0.3 * 0.1);
+    if( max_vel_x > 0.1 ) max_vel_x = 0.1;
+    if( max_vel_x < 0.02) max_vel_x = 0.02;
 
     max_vel_y = abs(side_direction / 0.3 * 0.1);
     if( max_vel_y > 0.1 ) max_vel_y = 0.1;
@@ -269,7 +281,6 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
     lin_x = front_direction / (abs(front_direction) + abs(side_direction)) * max_vel_x;
     lin_y = (side_direction / (abs(front_direction) + abs(side_direction)) * max_vel_y);
     
-    float calc_dRad = -pitch;
 
     float max_yaw = 0.02;
     if( calc_dRad > max_yaw )
