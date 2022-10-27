@@ -4,15 +4,17 @@
     <arg name="marker_frame"    default="marker"/>
     <arg name="ref_frame"       default=""/>  <!-- leave empty and the pose will be published wrt param parent_name -->
     <arg name="corner_refinement" default="LINES" /> <!-- NONE, HARRIS, LINES, SUBPIX -->
-    
+
     <arg name="camera_frame" default="left"/>
     <arg name="camera" default="camera"/>
     <arg name="serial_no" default=""/>
 
     <arg name="multi" default="false"/>
-    
+    <arg name="respawn" default="false"/>
+
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <!-- <arg name="camera" value="$(arg camera)"/> -->
+        <arg name="respawn" value="$(arg respawn)"/>
         <arg name="serial_no" value="$(arg serial_no)"/>
     </include>
 

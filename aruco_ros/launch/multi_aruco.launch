@@ -1,0 +1,49 @@
+<launch>
+    <arg name="multi" default="true"/>
+    <arg name="rs_left" default="rs_left"/>
+    <arg name="rs_right" default="rs_right"/>
+    <arg name="rs_front" default="rs_front"/>
+    <arg name="respawn" default="true"/>
+
+    <group ns="$(arg rs_left)">
+        <param name="tf_prefix" value="$(arg rs_left)"/>
+        <include file="$(find aruco_ros)/launch/single.launch">
+            <arg name="marker_frame" value="left_marker"/>
+            <arg name="camera_frame" value="left"/>
+            <arg name="multi" value="$(arg multi)"/>
+            <arg name="camera" value="$(arg rs_left)"/>
+            <arg name="serial_no" value="938422071303"/>
+            <arg name="respawn" value="$(arg respawn)"/>
+        </include>
+    </group>
+    <group ns="$(arg rs_right)">
+        <param name="tf_prefix" value="$(arg rs_right)"/>
+        <include file="$(find aruco_ros)/launch/single.launch">
+            <arg name="marker_frame" value="right_marker"/>
+            <arg name="camera_frame" value="right"/>
+            <arg name="multi" value="$(arg multi)"/>
+            <arg name="camera" value="$(arg rs_right)"/>
+            <arg name="serial_no" value="017322073709"/>
+            <arg name="respawn" value="$(arg respawn)"/>
+        </include>
+    </group>
+   
+    <group ns="$(arg rs_front)">
+        <param name="tf_prefix" value="$(arg rs_front)"/>
+        <include file="$(find aruco_ros)/launch/single.launch">
+            <arg name="marker_frame" value="front_marker"/>
+            <arg name="camera_frame" value="front"/>
+            <arg name="multi" value="$(arg multi)"/>
+            <arg name="camera" value="$(arg rs_front)"/>
+            <arg name="serial_no" value="913422071281"/>
+            <arg name="respawn" value="$(arg respawn)"/>
+        </include> 
+    </group>
+
+
+
+    <!-- Run Rviz-->
+    <group if="$(arg multi)">
+        <node pkg="rviz" type="rviz" name="aruco_rviz" args="-d $(find aruco_ros)/rviz/display_aruco.rviz" />
+    </group>
+</launch>
