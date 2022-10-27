@@ -27,8 +27,13 @@ class FollowMarker{
 private:
     ros::Publisher pub_omniwheel_velocity_QR_Marker;
     ros::Publisher pub_QR_localization_Complete;
+    ros::Subscriber sub_QR_localization_Request;
     ros::ServiceServer srv_QR_localization;
+    
     follow_camera m_cam_direction = LEFT_CAM;
+    std::string m_QR_localization_cmd;
+    bool m_service_stop=false;
+    void Ros_Sub_FollowInterface(const std_msgs::String::ConstPtr& msg);
     bool Ros_Srv_FollowInterface(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
     void Ros_Pub_State();
     bool Run_FollowMarker();
@@ -41,8 +46,7 @@ public:
     FollowMarker();
     ~FollowMarker();
     bool Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform, int marker_id);
-    bool Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id);
-    
+    bool Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id);    
     void Thread_FollowMarker();
 };
 

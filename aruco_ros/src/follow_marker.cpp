@@ -8,6 +8,7 @@ FollowMarker::FollowMarker()
 {
     ros::NodeHandle nh;
     srv_QR_localization = nh.advertiseService("service_QR_localization", &FollowMarker::Ros_Srv_FollowInterface, this);
+    sub_QR_localization_Request = nh.subscribe("/QR_localization_Request", 1, &FollowMarker::Ros_Sub_FollowInterface, this);
     pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("/omniwheel/velocity", 10);
     pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("/QR_localization_complete",10);
 }
@@ -21,6 +22,41 @@ bool FollowMarker::Ros_Srv_FollowInterface(std_srvs::Trigger::Request& req, std_
   boost::thread( boost::bind( &FollowMarker::Thread_FollowMarker, this ) );
   fprintf(stderr,"service_QR_localization service call !!!\n");
   return true;
+}
+
+void FollowMarker::Ros_Sub_FollowInterface(const std_msgs::String::ConstPtr& msg)
+{
+    fprintf(stderr,"[Ros_Sub_FollowInterface] received msg : [ %s ]\n", msg->data.c_str());
+    m_QR_localization_cmd = msg->data;
+
+    if( m_QR_localization_cmd == "STOP")
+    {
+        m_service_stop = true;
+    }
+    else
+    {
+        m_service_stop = true;
+        usleep(1000*1000);
+        if( m_QR_localization_cmd == "LEFT_CAM" )
+        {
+            m_cam_direction = LEFT_CAM;        
+        }
+        else if( m_QR_localization_cmd == "RIGHT_CAM" )
+        {
+            m_cam_direction = RIGHT_CAM;
+        }
+        else if( m_QR_localization_cmd == "FRONT_CAM" )
+        {
+            m_cam_direction = FRONT_CAM;        
+        }
+        else if( m_QR_localization_cmd == "BACK_CAM" )
+        {
+            m_cam_direction = BACK_CAM;        
+        }          
+        m_service_stop = false;
+        boost::thread( boost::bind( &FollowMarker::Thread_FollowMarker, this ) );
+        fprintf(stderr,"service_QR_localization service call !!!\n");
+    }
 }
 
 void FollowMarker::Ros_Pub_State()
@@ -44,6 +80,10 @@ bool FollowMarker::Run_FollowMarker()
     int filter_tf_sum_cnt = 0;
     while(1)
     {   
+        if( m_service_stop == true)
+        {
+            break;
+        }
         usleep(1000*30);//30ms
         bool ret;     
         tf::Transform filter_tf;
@@ -79,6 +119,7 @@ bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform 
     else if( m_cam_direction == RIGHT_CAM )
     {
         camera_child_link_name = "right_camera_child";
+        br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "right_camera_link", "right_camera_child"));
     }
     else if( m_cam_direction == FRONT_CAM )
     {
