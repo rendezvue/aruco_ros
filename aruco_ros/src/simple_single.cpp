@@ -162,7 +162,9 @@ public:
     position_pub = nh.advertise<geometry_msgs::Vector3Stamped>("position", 100);
     marker_pub = nh.advertise<visualization_msgs::Marker>("marker", 10);
     pixel_pub = nh.advertise<geometry_msgs::PointStamped>("pixel", 10);
-    pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("destination_velocity", 10);
+    // pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("destination_velocity", 10);
+    pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("/omniwheel/velocity", 10);
+    
     pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("QR_localization_complete",10);
     // marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
     qr_cmd_pub = nh.advertise<std_msgs::Bool>("/aruco_single/qr_cmd", 1);
@@ -268,9 +270,13 @@ public:
 
 
 
-      float max_vel = 0.02;
-      float lin_x = origin.x() / (abs(origin.x()) + abs(origin.y())) * max_vel;
-      float lin_y = -(origin.y() / (abs(origin.x()) + abs(origin.y())) * max_vel);
+      float max_vel_x = 0.02;
+      float max_vel_y = 0.02;
+      max_vel_y = abs(origin.y() / 0.3 * 0.1);
+      if( max_vel_y > 0.1 ) max_vel_y = 0.1;
+      if( max_vel_y < 0.02) max_vel_y = 0.02;
+      float lin_x = origin.x() / (abs(origin.x()) + abs(origin.y())) * max_vel_x;
+      float lin_y = -(origin.y() / (abs(origin.x()) + abs(origin.y())) * max_vel_y);
       
       float calc_dRad = -yaw;
 
@@ -306,6 +312,10 @@ public:
             omniwheel_velocity_QR_Marker.data.push_back(0);
             omniwheel_velocity_QR_Marker.data.push_back(0);
             pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+
+            origin_sum = tf::Vector3();
+            quat_sum = tf::Quaternion();
+            filter_tf_sum_cnt = 0;
 
             return true;
           }
@@ -381,7 +391,7 @@ public:
   {
       tf::Transform destination_tf;
       destination_tf.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
-      tf::Vector3 position_xyz(0.0, 0.0, 0.15); // z축 기준 20cm
+      tf::Vector3 position_xyz(0.0, 0.0, 0.25); // z축 기준 20cm
       destination_tf.setOrigin(position_xyz);
 
       tf::Quaternion dest_quat;
