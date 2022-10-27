@@ -482,19 +482,19 @@ public:
           transform = static_cast<tf::Transform>(cameraToReference) * static_cast<tf::Transform>(rightToLeft) * transform;
 
           // camera child TF
-          static tf::TransformBroadcaster br_left_cam_child;
-          tf::Transform transform_left_cam_child;
-          transform_left_cam_child.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
-          tf::Quaternion q;
-          // 3.141592653589793
-          // 1.57079632679489655
-          q.setRPY(-1.57079632679489655, 0, -1.57079632679489655);
-          transform_left_cam_child.setRotation(q);
-          br_left_cam_child.sendTransform (tf::StampedTransform(transform_left_cam_child, ros::Time::now(), "left_camera_link", "left_camera_child"));
+          //static tf::TransformBroadcaster br_left_cam_child;
+          //tf::Transform transform_left_cam_child;
+          //transform_left_cam_child.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+          //tf::Quaternion q;
+          //// 3.141592653589793
+          //// 1.57079632679489655
+          //q.setRPY(-1.57079632679489655, 0, -1.57079632679489655);
+          //transform_left_cam_child.setRotation(q);
+          //br_left_cam_child.sendTransform (tf::StampedTransform(transform_left_cam_child, ros::Time::now(), "left_camera_link", "left_camera_child"));
 
-          q.setRPY(3.141592, 0, -1.57079632679489655);
-          transform_left_cam_child.setRotation(q);
-          br_left_cam_child.sendTransform (tf::StampedTransform(transform_left_cam_child, ros::Time::now(), "left_camera_link", "left_camera_baselink_direction"));
+          //q.setRPY(3.141592, 0, -1.57079632679489655);
+          //transform_left_cam_child.setRotation(q);
+          //br_left_cam_child.sendTransform (tf::StampedTransform(transform_left_cam_child, ros::Time::now(), "left_camera_link", "left_camera_baselink_direction"));
 
 
 
@@ -508,9 +508,9 @@ public:
           // transform.setRotation(q);
 
 
-          // tf::StampedTransform stampedTransform(transform, curr_stamp, reference_frame, marker_frame);
-          std::string marker_frame_with_id = marker_frame + "_" + std::to_string(markers[i].id);
-          tf::StampedTransform stampedTransform(transform, ros::Time::now(), "left_camera_child", marker_frame_with_id.c_str());
+          tf::StampedTransform stampedTransform(transform, curr_stamp, reference_frame, marker_frame);
+          //std::string marker_frame_with_id = marker_frame + "_" + std::to_string(markers[i].id);
+          //tf::StampedTransform stampedTransform(transform, ros::Time::now(), "left_camera_child", marker_frame_with_id.c_str());
 
 
           // // left_camera_child에서 20cm 떨어진 tf 생성 테스트
@@ -523,10 +523,10 @@ public:
 
 
           // marker TF 생성
-          br.sendTransform(stampedTransform);
-          
-          m_follow_marker.Make_Destination_TF(br,marker_frame_with_id);
-          //make_destination_tf(br, marker_frame_with_id);
+          //br.sendTransform(stampedTransform);
+          m_follow_marker.Update_Marker_TF(br,transform, markers[i].id);          
+          //m_follow_marker.Make_Destination_TF(br,marker_frame_with_id);
+          //make_destination_tf(br, "marker_frame");
 
           // just publish topic
           geometry_msgs::PoseStamped poseMsg;
@@ -665,7 +665,7 @@ bool ArucoSimple::service_QR_localization(std_srvs::Trigger::Request& req, std_s
 
 void ArucoSimple::thread_destination_cmd_vel()
 {
-  bool result =  make_destination_cmd_vel("left_camera_baselink_direction", "destination_tf");
+  bool result =  make_destination_cmd_vel("left_camera_child", "destination_tf");
   std_msgs::Bool service_results;
   service_results.data = result;
   pub_QR_localization_Complete.publish(service_results);
@@ -678,7 +678,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ArucoSimple node;
 
- // ros::ServiceServer QR_localization = nh.advertiseService("service_QR_localization", &ArucoSimple::service_QR_localization, &node);
+  // ros::ServiceServer QR_localization = nh.advertiseService("service_QR_localization", &ArucoSimple::service_QR_localization, &node);
   
 
 

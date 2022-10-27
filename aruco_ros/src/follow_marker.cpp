@@ -9,7 +9,7 @@ FollowMarker::FollowMarker()
     ros::NodeHandle nh;
     srv_QR_localization = nh.advertiseService("service_QR_localization", &FollowMarker::Ros_Srv_FollowInterface, this);
     pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("/omniwheel/velocity", 10);
-    pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("QR_localization_complete",10);
+    pub_QR_localization_Complete = nh.advertise<std_msgs::Bool>("/QR_localization_complete",10);
 }
 FollowMarker::~FollowMarker()
 {
@@ -31,13 +31,10 @@ void FollowMarker::Ros_Pub_State()
 
 void FollowMarker::Thread_FollowMarker()
 {
-    while(1)
-    {
-        bool result =  Run_FollowMarker();
-        std_msgs::Bool service_results;
-        service_results.data = result;
-        pub_QR_localization_Complete.publish(service_results);
-    }
+    bool result =  Run_FollowMarker();
+    std_msgs::Bool service_results;
+    service_results.data = result;
+    pub_QR_localization_Complete.publish(service_results);
 }
 
 bool FollowMarker::Run_FollowMarker()
@@ -47,16 +44,53 @@ bool FollowMarker::Run_FollowMarker()
     int filter_tf_sum_cnt = 0;
     while(1)
     {   
+        usleep(1000*30);//30ms
         bool ret;     
-        ret = Make_Filtered_Destination("left_camera_child",DESTINATION_TF_NAME, origin_filter , quat_filter, filter_tf_sum_cnt);
+        tf::Transform filter_tf;
+        ret = Make_Filtered_Destination("left_camera_child","destination_tf", origin_filter , quat_filter, filter_tf, filter_tf_sum_cnt);
         if( ret == false ) return false;
-        ret = Check_Goal_Reached(origin_filter , quat_filter);
-        if( ret == true ) return true; // true : goal reached
+        //ret = Check_Goal_Reached(origin_filter , quat_filter);
+        //if( ret == true ) return true; // true : goal reached
         float lin_x, lin_y , lift_z, angular_z;
-        Make_Cmd_Vel(origin_filter , quat_filter, lin_x, lin_y , lift_z, angular_z);
+
+        ret = Make_Cmd_Vel(origin_filter , quat_filter, filter_tf , lin_x, lin_y , lift_z, angular_z);
+        if( ret == true ) return true; // true : goal reached
+
         Move_Robot(lin_x, lin_y ,angular_z);
         Move_Lift(lift_z);
     }
+}
+
+bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform transform, int marker_id)
+{
+    std::string marker_frame_with_id = "marker_frame";// + "_" + std::to_string(marker_id).c_str();
+    std::string camera_child_link_name;
+    tf::Transform transform_cam_child;
+    
+    transform_cam_child.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
+    tf::Quaternion q;
+    q.setRPY(-1.57079632679489655, 0, -1.57079632679489655);
+    transform_cam_child.setRotation(q);
+    if( m_cam_direction == LEFT_CAM )
+    {
+        camera_child_link_name = "left_camera_child";
+        br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "left_camera_link", "left_camera_child"));
+    }
+    else if( m_cam_direction == RIGHT_CAM )
+    {
+        camera_child_link_name = "right_camera_child";
+    }
+    else if( m_cam_direction == FRONT_CAM )
+    {
+        camera_child_link_name = "front_camera_child";
+    }
+    else if( m_cam_direction == BACK_CAM )
+    {
+        camera_child_link_name = "back_camera_child";
+    }
+    tf::StampedTransform stampedTransform(transform, ros::Time::now(), camera_child_link_name, marker_frame_with_id.c_str());
+    br.sendTransform (stampedTransform);
+    Make_Destination_TF(br,marker_frame_with_id);
 }
 
 bool FollowMarker::Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id)
@@ -67,7 +101,7 @@ bool FollowMarker::Make_Destination_TF(tf::TransformBroadcaster &br, std::string
     destination_tf.setOrigin(position_xyz);
 
     tf::Quaternion dest_quat;
-    dest_quat.setRPY(1.541592,0,1.541592);
+    dest_quat.setRPY(0,0,0);
     destination_tf.setRotation(dest_quat);
     
     tf::StampedTransform stampedTransform_destination(destination_tf, ros::Time::now(), marker_frame_id.c_str(), DESTINATION_TF_NAME);
@@ -78,7 +112,7 @@ bool FollowMarker::Make_Destination_TF(tf::TransformBroadcaster &br, std::string
     return true;
 }
 
-bool FollowMarker::Make_Filtered_Destination(const std::string camera_tf, const std::string destination_tf, tf::Vector3 &origin_sum, tf::Quaternion &quat_sum, int &filter_tf_sum_cnt)
+bool FollowMarker::Make_Filtered_Destination(const std::string camera_tf, const std::string destination_tf, tf::Vector3 &origin_sum, tf::Quaternion &quat_sum, tf::Transform &filter_tf, int &filter_tf_sum_cnt)
 {
     static tf::TransformBroadcaster filter_tf_br;
     tf::TransformListener tfListener;
@@ -105,7 +139,7 @@ bool FollowMarker::Make_Filtered_Destination(const std::string camera_tf, const 
         }
     }
 
-    tf::Transform filter_tf;
+    //tf::Transform filter_tf;
     {
         
         tf::Vector3 origin = stampedtf_destination.getOrigin();
@@ -136,39 +170,40 @@ bool FollowMarker::Make_Filtered_Destination(const std::string camera_tf, const 
     return true;
 }
 
+// 
+// bool FollowMarker::Check_Goal_Reached(tf::Vector3 origin_sum, tf::Quaternion quad_sum)
+// {
+    //  tf::Vector3 origin = origin_sum;
+    // tf::Quaternion quat = quad_sum;
+    // tf::Matrix3x3 m(quat);
+    // double roll,pitch,yaw;
+    // m.getRPY(roll,pitch,yaw);
+    // float calc_dRad = -pitch;
+// 
+    // if( abs(front_direction) < 0.01 && 
+        // abs(side_direction) < 0.01 &&
+        // abs((calc_dRad)*180/3.141592) < 1 )
+    // {
+        // std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+        // omniwheel_velocity_QR_Marker.data.push_back(0);
+        // omniwheel_velocity_QR_Marker.data.push_back(0);
+        // omniwheel_velocity_QR_Marker.data.push_back(0);
+        // omniwheel_velocity_QR_Marker.data.push_back(0);
+        // pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+        // return true;
+    // }
+    // return false;
+// }
 
-bool FollowMarker::Check_Goal_Reached(tf::Vector3 origin_sum, tf::Quaternion quad_sum)
-{
-     tf::Vector3 origin = origin_sum;
-    tf::Quaternion quat = quad_sum;
-    tf::Matrix3x3 m(quat);
-    double roll,pitch,yaw;
-    m.getRPY(roll,pitch,yaw);
-    float calc_dRad = -yaw;
 
-    if( abs(origin.x()) < 0.01 && 
-        abs(origin.y()) < 0.01 &&
-        abs((calc_dRad)*180/3.141592) < 1 )
-    {
-        std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
-        omniwheel_velocity_QR_Marker.data.push_back(0);
-        omniwheel_velocity_QR_Marker.data.push_back(0);
-        omniwheel_velocity_QR_Marker.data.push_back(0);
-        omniwheel_velocity_QR_Marker.data.push_back(0);
-        pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
-        return true;
-    }
-    return false;
-}
-
-
-bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum, float &lin_x, float &lin_y ,float &lift_z, float &angular_z)
+bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum, tf::Transform filter_tf , float &lin_x, float &lin_y ,float &lift_z, float &angular_z)
 {
     // tf::Vector3 origin = stampedtf_destination.getOrigin();
     // tf::Quaternion quat = stampedtf_destination.getRotation();
     tf::Vector3 origin = origin_sum;
     tf::Quaternion quat = quad_sum;
-
+    // tf::Vector3 origin = filter_tf.getOrigin();
+    // tf::Quaternion quat = filter_tf.getRotation();
 
     tf::Matrix3x3 m(quat);
     double roll,pitch,yaw;
@@ -178,13 +213,17 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
 
     float max_vel_x = 0.02;
     float max_vel_y = 0.02;
-    max_vel_y = abs(origin.y() / 0.3 * 0.1);
+
+    float front_direction = origin.x();
+    float side_direction = origin.z();
+
+    max_vel_y = abs(side_direction / 0.3 * 0.1);
     if( max_vel_y > 0.1 ) max_vel_y = 0.1;
     if( max_vel_y < 0.02) max_vel_y = 0.02;
-    lin_x = origin.x() / (abs(origin.x()) + abs(origin.y())) * max_vel_x;
-    lin_y = -(origin.y() / (abs(origin.x()) + abs(origin.y())) * max_vel_y);
+    lin_x = front_direction / (abs(front_direction) + abs(side_direction)) * max_vel_x;
+    lin_y = (side_direction / (abs(front_direction) + abs(side_direction)) * max_vel_y);
     
-    float calc_dRad = -yaw;
+    float calc_dRad = -pitch;
 
     float max_yaw = 0.02;
     if( calc_dRad > max_yaw )
@@ -199,14 +238,25 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
     angular_z = calc_dRad;
 
 
-    fprintf(stderr,"[curtime:%ld] TEST!! %f, %f, %f /  yaw ( rad: %f / deg : %f ) , lin_x = %f, lin_y = %f\n",
+    fprintf(stderr,"[curtime:%ld] TEST!! %f, %f, %f /  yaw rad(%f) / calcYaw( rad: %f / deg : %f ) , lin_x = %f, lin_y = %f\n",
                 ros::Time::now().toNSec(),
                 //stampedtf_destination.stamp_.toNSec(),
-                origin.x() ,origin.y(), origin.z(), calc_dRad , ((calc_dRad)*180/3.141592),
+                front_direction ,side_direction, origin.z(), -yaw, calc_dRad , ((calc_dRad)*180/3.141592),
                 lin_x, lin_y);
 
-
-    return true;
+    if( abs(front_direction) < 0.01 && 
+        abs(side_direction) < 0.01 &&
+        abs((calc_dRad)*180/3.141592) < 1 )
+    {
+        std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+        return true;
+    }
+    return false;
 }
 
 void FollowMarker::Move_Robot( float lin_x, float lin_y , float angular_z)
