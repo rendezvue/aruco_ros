@@ -12,7 +12,7 @@
             <arg name="camera_frame" value="left"/>
             <arg name="multi" value="$(arg multi)"/>
             <arg name="camera" value="$(arg rs_left)"/>
-            <arg name="serial_no" value="938422071303"/>
+            <arg name="serial_no" value="913422071296"/>
             <arg name="respawn" value="$(arg respawn)"/>
         </include>
     </group>
@@ -23,7 +23,7 @@
             <arg name="camera_frame" value="right"/>
             <arg name="multi" value="$(arg multi)"/>
             <arg name="camera" value="$(arg rs_right)"/>
-            <arg name="serial_no" value="017322073709"/>
+            <arg name="serial_no" value="017322074305"/>
             <arg name="respawn" value="$(arg respawn)"/>
         </include>
     </group>
