@@ -3,30 +3,31 @@
     <arg name="rs_left" default="rs_left"/>
     <arg name="rs_right" default="rs_right"/>
     <arg name="rs_front" default="rs_front"/>
+    <arg name="rs_back" default="rs_back"/>
     <arg name="respawn" default="true"/>
 
-    <group ns="$(arg rs_left)">
-        <param name="tf_prefix" value="$(arg rs_left)"/>
+    <group ns="$(arg rs_back)">
+        <param name="tf_prefix" value="$(arg rs_back)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
-            <arg name="marker_frame" value="left_marker"/>
-            <arg name="camera_frame" value="left"/>
+            <arg name="marker_frame" value="back_marker"/>
+            <arg name="camera_frame" value="back"/>
             <arg name="multi" value="$(arg multi)"/>
-            <arg name="camera" value="$(arg rs_left)"/>
-            <arg name="serial_no" value="913422071296"/>
+            <arg name="camera" value="$(arg rs_back)"/>
+            <arg name="serial_no" value="938422071303"/>
             <arg name="respawn" value="$(arg respawn)"/>
         </include>
     </group>
-    <group ns="$(arg rs_right)">
+    <!-- <group ns="$(arg rs_right)">
         <param name="tf_prefix" value="$(arg rs_right)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
             <arg name="marker_frame" value="right_marker"/>
             <arg name="camera_frame" value="right"/>
             <arg name="multi" value="$(arg multi)"/>
             <arg name="camera" value="$(arg rs_right)"/>
-            <arg name="serial_no" value="017322074305"/>
+            <arg name="serial_no" value="913422071296"/> 
             <arg name="respawn" value="$(arg respawn)"/>
         </include>
-    </group>
+    </group> -->
    
     <group ns="$(arg rs_front)">
         <param name="tf_prefix" value="$(arg rs_front)"/>

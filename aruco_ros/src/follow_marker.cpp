@@ -129,6 +129,7 @@ bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform 
     else if( m_cam_direction == BACK_CAM )
     {
         m_camera_child_link_name = "back_camera_child";
+        br.sendTransform (tf::StampedTransform(transform_cam_child, ros::Time::now(), "back_camera_link", m_camera_child_link_name));
     }
     if( m_cam_direction != NONE_CAM )
     {
@@ -272,6 +273,11 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
     {
         front_direction = origin.z();
         side_direction = -origin.x();
+    }
+    else if( m_cam_direction == BACK_CAM )
+    {
+        front_direction = -origin.z();
+        side_direction = origin.x();
     }
     
     
