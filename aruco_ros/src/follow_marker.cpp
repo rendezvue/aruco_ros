@@ -144,7 +144,7 @@ bool FollowMarker::Make_Destination_TF(tf::TransformBroadcaster &br, std::string
 {
     tf::Transform destination_tf;
     destination_tf.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
-    tf::Vector3 position_xyz(0.0, 0.0, 0.25); // z축 기준 20cm
+    tf::Vector3 position_xyz(0.0, 0.0, 0.15); // z축 기준 20cm
     destination_tf.setOrigin(position_xyz);
 
     tf::Quaternion dest_quat;
@@ -311,8 +311,8 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
                 front_direction ,side_direction, origin.z(), -yaw, calc_dRad , ((calc_dRad)*180/3.141592),
                 lin_x, lin_y);
 
-    if( abs(front_direction) < 0.01 && 
-        abs(side_direction) < 0.01 &&
+    if( abs(front_direction) < 0.005 && 
+        abs(side_direction) < 0.005 &&
         abs((calc_dRad)*180/3.141592) < 1 )
     {
         std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
