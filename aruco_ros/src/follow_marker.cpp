@@ -32,6 +32,12 @@ void FollowMarker::Ros_Sub_FollowInterface(const std_msgs::String::ConstPtr& msg
     if( m_QR_localization_cmd == "STOP")
     {
         m_service_stop = true;
+        std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        omniwheel_velocity_QR_Marker.data.push_back(0);
+        pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
     }
     else
     {
@@ -88,13 +94,25 @@ bool FollowMarker::Run_FollowMarker()
         bool ret;     
         tf::Transform filter_tf;
         ret = Make_Filtered_Destination(m_camera_child_link_name, DESTINATION_TF_NAME+m_camera_child_link_name , origin_filter , quat_filter, filter_tf, filter_tf_sum_cnt);
-        if( ret == false ) return false;
+        if( ret == false ) 
+        {
+            std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
+            omniwheel_velocity_QR_Marker.data.push_back(0);
+            omniwheel_velocity_QR_Marker.data.push_back(0);
+            omniwheel_velocity_QR_Marker.data.push_back(0);
+            omniwheel_velocity_QR_Marker.data.push_back(0);
+            pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
+            return false;
+        }
         //ret = Check_Goal_Reached(origin_filter , quat_filter);
         //if( ret == true ) return true; // true : goal reached
         float lin_x, lin_y , lift_z, angular_z;
 
         ret = Make_Cmd_Vel(origin_filter , quat_filter, filter_tf , lin_x, lin_y , lift_z, angular_z);
-        if( ret == true ) return true; // true : goal reached
+        if( ret == true ) 
+        {
+            return true; // true : goal reached
+        }
 
         Move_Robot(lin_x, lin_y ,angular_z);
         Move_Lift(lift_z);
