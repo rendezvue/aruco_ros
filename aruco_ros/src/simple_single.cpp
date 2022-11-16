@@ -80,8 +80,8 @@ private:
   ros::Publisher pixel_pub;
   ros::Publisher qr_cmd_pub;
 
-  ros::Publisher lift_flag;
-  ros::Publisher lift_cmd;
+
+
   //rdv mecanum wheel direct controller
   ros::Publisher pub_omniwheel_velocity_QR_Marker;
   ros::Publisher pub_QR_localization_Complete;
@@ -104,11 +104,11 @@ private:
   dynamic_reconfigure::Server<aruco_ros::ArucoThresholdConfig> dyn_rec_server;
 
   std_msgs::Bool qr_corr;
-  std_msgs::Bool lift_bool;
-  std_msgs::String lift_val;
+
 
 
   FollowMarker m_follow_marker;
+  double limit_dist = 0.15;
   
 public:
   void thread_destination_cmd_vel();
@@ -172,8 +172,7 @@ public:
     // marker_rpy_pub = nh.advertise<geometry_msgs::Vector3>("rpy", 100);
     qr_cmd_pub = nh.advertise<std_msgs::Bool>("/aruco_single/qr_cmd", 1);
 
-    lift_flag = nh.advertise<std_msgs::Bool>("/arduino/lift/flag", 1);
-    lift_cmd = nh.advertise<std_msgs::String>("/arduino/lift/cmd", 1);
+
 
     nh.param<double>("marker_size", marker_size, 0.05);
     nh.param<int>("marker_id", marker_id, 300);
@@ -181,6 +180,7 @@ public:
     nh.param<std::string>("camera_frame", camera_frame, "");
     nh.param<std::string>("marker_frame", marker_frame, "");
     nh.param<bool>("image_is_rectified", useRectifiedImages, true);
+    nh.param<double>("limit_dist", limit_dist, 0.15);
 
     ROS_ASSERT(camera_frame != "" && marker_frame != "");
 
@@ -370,8 +370,6 @@ public:
       }
       else 
       {
-        // lift_bool.data = false;
-        // lift_val.data = "s";
         qr_corr.data = false;
         std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
         omniwheel_velocity_QR_Marker.data.push_back(0);
@@ -385,8 +383,7 @@ public:
         return false;
       }
       qr_cmd_pub.publish(qr_corr);
-      // lift_flag.publish(lift_bool);
-      // lift_cmd.publish(lift_val);
+
     }
   }
 
@@ -524,7 +521,7 @@ public:
 
           // marker TF 생성
           //br.sendTransform(stampedTransform);
-          m_follow_marker.Update_Marker_TF(br,transform, markers[i].id);          
+          m_follow_marker.Update_Marker_TF(br, transform, markers[i].id, limit_dist);          
           //m_follow_marker.Make_Destination_TF(br,marker_frame_with_id);
           //make_destination_tf(br, "marker_frame");
 

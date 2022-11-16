@@ -12,10 +12,13 @@
     <arg name="multi" default="false"/>
     <arg name="respawn" default="false"/>
 
+    <arg name="limit_dist" default="0.15"/>
+
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <!-- <arg name="camera" value="$(arg camera)"/> -->
         <arg name="respawn" value="$(arg respawn)"/>
         <arg name="serial_no" value="$(arg serial_no)"/>
+        <arg name="enable_depth" value="false"/>"
     </include>
 
     <node pkg="aruco_ros" type="single" name="aruco_single">
@@ -32,6 +35,8 @@
         <param name="camera_frame"       value="$(arg camera_frame)_camera_link"/>
         <remap from="/camera_info" to="/$(arg camera)/camera/color/camera_info" />
         <remap from="/image" to="/$(arg camera)/camera/color/image_raw" />
+
+        <param name="limit_dist" value="$(arg limit_dist)"/>
     </node>
 
     <!--- Run Rviz-->

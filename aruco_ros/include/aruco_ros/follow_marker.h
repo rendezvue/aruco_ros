@@ -19,9 +19,10 @@
 #include <std_msgs/Float32MultiArray.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/String.h>
+#include <std_msgs/Int32.h>
 #include <std_srvs/Trigger.h>
 
-enum follow_camera{NONE_CAM, LEFT_CAM, RIGHT_CAM,FRONT_CAM, BACK_CAM};
+enum follow_camera{NONE_CAM, LEFT_CAM, RIGHT_CAM,FRONT_CAM, BACK_CAM, LEFT_LIFT};
 
 class FollowMarker{
 private:
@@ -32,6 +33,7 @@ private:
     std::string m_camera_child_link_name;
     follow_camera m_cam_direction = NONE_CAM;
     std::string m_QR_localization_cmd;
+
     bool m_service_stop=false;
     void Ros_Sub_FollowInterface(const std_msgs::String::ConstPtr& msg);
     bool Ros_Srv_FollowInterface(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
@@ -42,11 +44,29 @@ private:
     bool Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum, tf::Transform filter_tf, float &lin_x, float &lin_y ,float &lift_z, float &angular_z);
     void Move_Robot( float lin_x, float lin_y , float angular_z);
     void Move_Lift(float lift_z);
+
+    ros::Subscriber sub_lift_height;
+    void Ardu_Sub_LiftHeight(const std_msgs::Int32::ConstPtr& msg);
+    int m_Lift_height;
+
+    ros::Publisher lift_flag;
+    ros::Publisher lift_cmd;
+    std_msgs::Bool lift_bool;
+    std_msgs::String lift_val;
+    int lift_up_cnt = 0;
+    int lift_down_cnt = 0;
+
+    ros::Publisher pub_only_left_lift_qr_com;
+    ros::Subscriber sub_only_left_lift_qr_req;
+    void Sub_Only_left_lift(const std_msgs::String::ConstPtr& msg);
+    std::string sub_o_left_lift;
+    std_msgs::Bool pub_o_left_lift;
+
 public:
     FollowMarker();
     ~FollowMarker();
-    bool Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform, int marker_id);
-    bool Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id);    
+    bool Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform, int marker_id, double limit_dist);
+    bool Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id, double limit_dist);    
     void Thread_FollowMarker();
 };
 

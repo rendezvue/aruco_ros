@@ -5,16 +5,19 @@
     <arg name="rs_front" default="rs_front"/>
     <arg name="rs_back" default="rs_back"/>
     <arg name="respawn" default="true"/>
+    <arg name="limit_dist" default="0.15"/>
 
-    <group ns="$(arg rs_back)">
-        <param name="tf_prefix" value="$(arg rs_back)"/>
+
+    <group ns="$(arg rs_left)">
+        <param name="tf_prefix" value="$(arg rs_left)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
-            <arg name="marker_frame" value="back_marker"/>
-            <arg name="camera_frame" value="back"/>
+            <arg name="marker_frame" value="left_marker"/>
+            <arg name="camera_frame" value="left"/>
             <arg name="multi" value="$(arg multi)"/>
-            <arg name="camera" value="$(arg rs_back)"/>
-            <arg name="serial_no" value="938422071303"/>
+            <arg name="camera" value="$(arg rs_left)"/>
+            <arg name="serial_no" value="939622075221"/>
             <arg name="respawn" value="$(arg respawn)"/>
+            <arg name="limit_dist" value="$(arg limit_dist)"/>
         </include>
     </group>
     <!-- <group ns="$(arg rs_right)">
@@ -24,12 +27,13 @@
             <arg name="camera_frame" value="right"/>
             <arg name="multi" value="$(arg multi)"/>
             <arg name="camera" value="$(arg rs_right)"/>
-            <arg name="serial_no" value="913422071296"/> 
+            <arg name="serial_no" value="938422072158"/> 
             <arg name="respawn" value="$(arg respawn)"/>
+            <arg name="limit_dist" value="$(arg limit_dist)"/>
         </include>
     </group> -->
    
-    <group ns="$(arg rs_front)">
+    <!-- <group ns="$(arg rs_front)">
         <param name="tf_prefix" value="$(arg rs_front)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
             <arg name="marker_frame" value="front_marker"/>
@@ -38,10 +42,9 @@
             <arg name="camera" value="$(arg rs_front)"/>
             <arg name="serial_no" value="913422071281"/>
             <arg name="respawn" value="$(arg respawn)"/>
+            <arg name="limit_dist" value="$(arg limit_dist)"/>
         </include> 
-    </group>
-
-
+    </group> -->
 
     <!-- Run Rviz-->
     <group if="$(arg multi)">
