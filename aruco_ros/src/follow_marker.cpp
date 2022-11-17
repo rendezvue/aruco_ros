@@ -392,6 +392,7 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
         return false;
     }
 
+    static int success_try = 0;
     if( abs(front_direction) < 0.005 && 
         abs(side_direction) < 0.005 &&
         abs((calc_dRad)*180/3.141592) < 1 &&
@@ -404,7 +405,18 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
         omniwheel_velocity_QR_Marker.data.push_back(0);
         pub_omniwheel_velocity_QR_Marker.publish(omniwheel_velocity_QR_Marker);
         Move_Lift(0);
-        return true;
+        success_try++;
+        
+        fprintf(stderr,"aruco success count = %d\n",success_try);
+        if( success_try > 30 )
+        {
+            return true;
+        }
+    }
+    else
+    {
+        fprintf(stderr,"success_try reset(%d -> 0)\n",success_try);
+        success_try = 0;
     }
     return false;
 }
