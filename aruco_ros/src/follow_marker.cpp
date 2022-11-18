@@ -367,7 +367,8 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
     }
     
     angular_z = calc_dRad;
-    lift_z = lift_distance;
+    if (m_cam_direction == BACK_CAM || m_cam_direction == FRONT_CAM) lift_z = 0;
+    else lift_z = lift_distance;
     
     fprintf(stderr,"[curtime:%ld] TEST!! %f, %f, %f /  yaw rad(%f) / calcYaw( rad: %f / deg : %f ) , lin_x = %f, lin_y = %f\n",
                 ros::Time::now().toNSec(),

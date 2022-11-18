@@ -8,7 +8,7 @@
     <arg name="limit_dist" default="0.15"/>
 
 
-    <group ns="$(arg rs_left)">
+    <!-- <group ns="$(arg rs_left)">
         <param name="tf_prefix" value="$(arg rs_left)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
             <arg name="marker_frame" value="left_marker"/>
@@ -19,7 +19,7 @@
             <arg name="respawn" value="$(arg respawn)"/>
             <arg name="limit_dist" value="$(arg limit_dist)"/>
         </include>
-    </group>
+    </group> -->
     <!-- <group ns="$(arg rs_right)">
         <param name="tf_prefix" value="$(arg rs_right)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
@@ -33,18 +33,30 @@
         </include>
     </group> -->
    
-    <!-- <group ns="$(arg rs_front)">
+    <group ns="$(arg rs_front)">
         <param name="tf_prefix" value="$(arg rs_front)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
             <arg name="marker_frame" value="front_marker"/>
             <arg name="camera_frame" value="front"/>
             <arg name="multi" value="$(arg multi)"/>
             <arg name="camera" value="$(arg rs_front)"/>
-            <arg name="serial_no" value="913422071281"/>
+            <arg name="serial_no" value="938422075436"/>
             <arg name="respawn" value="$(arg respawn)"/>
             <arg name="limit_dist" value="$(arg limit_dist)"/>
         </include> 
-    </group> -->
+    </group>
+    <group ns="$(arg rs_back)">
+        <param name="tf_prefix" value="$(arg rs_back)"/>
+        <include file="$(find aruco_ros)/launch/single.launch">
+            <arg name="marker_frame" value="back_marker"/>
+            <arg name="camera_frame" value="back"/>
+            <arg name="multi" value="$(arg multi)"/>
+            <arg name="camera" value="$(arg rs_back)"/>
+            <arg name="serial_no" value="938422071303"/>
+            <arg name="respawn" value="$(arg respawn)"/>
+            <arg name="limit_dist" value="$(arg limit_dist)"/>
+        </include> 
+    </group>
 
     <!-- Run Rviz-->
     <group if="$(arg multi)">
