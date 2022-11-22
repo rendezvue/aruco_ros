@@ -6,8 +6,8 @@
     <arg name="rs_back" default="rs_back"/>
     <arg name="respawn" default="true"/>
     <arg name="limit_dist" default="0.15"/>
-    <arg name="limit_x" default="0.005"/>
-    <arg name="limit_y" default="0.005"/>
+    <arg name="limit_front" default="0.005"/>
+    <arg name="limit_side" default="0.005"/>
     <arg name="limit_ang" default="1.0"/>
     <arg name="limit_lift" default="0.01"/>
 
@@ -18,12 +18,16 @@
             <arg name="camera_frame" value="left"/>
             <arg name="multi" value="$(arg multi)"/>
             <arg name="camera" value="$(arg rs_left)"/>
-            <arg name="serial_no" value="939622075221"/>
+            <arg name="serial_no" value="933322071584"/>
             <arg name="respawn" value="$(arg respawn)"/>
             <arg name="limit_dist" value="$(arg limit_dist)"/>
+            <arg name="limit_x" value="$(arg limit_x)"/>
+            <arg name="limit_y" value="$(arg limit_y)"/>
+            <arg name="limit_ang" value="$(arg limit_ang)"/>
+            <arg name="limit_lift" value="$(arg limit_lift)"/>
         </include>
-    </group> -->
-    <!-- <group ns="$(arg rs_right)">
+    </group>
+    <group ns="$(arg rs_right)">
         <param name="tf_prefix" value="$(arg rs_right)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
             <arg name="marker_frame" value="right_marker"/>
@@ -33,6 +37,10 @@
             <arg name="serial_no" value="938422072158"/> 
             <arg name="respawn" value="$(arg respawn)"/>
             <arg name="limit_dist" value="$(arg limit_dist)"/>
+            <arg name="limit_x" value="$(arg limit_x)"/>
+            <arg name="limit_y" value="$(arg limit_y)"/>
+            <arg name="limit_ang" value="$(arg limit_ang)"/>
+            <arg name="limit_lift" value="$(arg limit_lift)"/>
         </include>
     </group> -->
    
@@ -46,8 +54,8 @@
             <arg name="serial_no" value="938422075436"/>
             <arg name="respawn" value="$(arg respawn)"/>
             <arg name="limit_dist" value="$(arg limit_dist)"/>
-            <arg name="limit_x" value="$(arg limit_x)"/>
-            <arg name="limit_y" value="$(arg limit_y)"/>
+            <arg name="limit_front" value="$(arg limit_front)"/>
+            <arg name="limit_side" value="$(arg limit_side)"/>
             <arg name="limit_ang" value="$(arg limit_ang)"/>
             <arg name="limit_lift" value="$(arg limit_lift)"/>
         </include> 
@@ -62,8 +70,8 @@
             <arg name="serial_no" value="938422071303"/>
             <arg name="respawn" value="$(arg respawn)"/>
             <arg name="limit_dist" value="$(arg limit_dist)"/>
-            <arg name="limit_x" value="$(arg limit_x)"/>
-            <arg name="limit_y" value="$(arg limit_y)"/>
+            <arg name="limit_front" value="$(arg limit_front)"/>
+            <arg name="limit_side" value="$(arg limit_side)"/>
             <arg name="limit_ang" value="$(arg limit_ang)"/>
             <arg name="limit_lift" value="$(arg limit_lift)"/>
         </include> 

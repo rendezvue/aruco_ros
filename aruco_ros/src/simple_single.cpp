@@ -109,8 +109,8 @@ private:
 
   FollowMarker m_follow_marker;
   double limit_dist = 0.15;
-  double limit_x = 0.005;
-  double limit_y = 0.005;
+  double limit_front = 0.005;
+  double limit_side = 0.005;
   double limit_ang = 1.0;
   double limit_lift = 0.01;
   
@@ -186,8 +186,8 @@ public:
     nh.param<bool>("image_is_rectified", useRectifiedImages, true);
 
     nh.param<double>("limit_dist", limit_dist, 0.15);
-    nh.param<double>("limit_x", limit_x, 0.005);
-    nh.param<double>("limit_y", limit_y, 0.005);
+    nh.param<double>("limit_front", limit_front, 0.005);
+    nh.param<double>("limit_side", limit_side, 0.005);
     nh.param<double>("limit_ang", limit_ang, 1.0);
     nh.param<double>("limit_lift", limit_lift, 0.01);
 
@@ -530,7 +530,7 @@ public:
 
           // marker TF 생성
           //br.sendTransform(stampedTransform);
-          m_follow_marker.Update_Marker_TF(br, transform, markers[i].id, limit_dist, limit_x, limit_y, limit_ang, limit_lift);          
+          m_follow_marker.Update_Marker_TF(br, transform, markers[i].id, limit_dist, limit_front, limit_side, limit_ang, limit_lift);          
           //m_follow_marker.Make_Destination_TF(br,marker_frame_with_id);
           //make_destination_tf(br, "marker_frame");
 

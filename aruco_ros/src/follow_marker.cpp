@@ -150,15 +150,15 @@ bool FollowMarker::Run_FollowMarker()
     }
 }
 
-bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform transform, int marker_id, double limit_dist, double limit_x, double limit_y, double limit_ang, double limit_lift)
+bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform transform, int marker_id, double limit_dist, double limit_front, double limit_side, double limit_ang, double limit_lift)
 {
     std::string marker_frame_with_id = "marker_frame_";// + "_" + std::to_string(marker_id).c_str();
     
     tf::Transform transform_cam_child;
 
     m_limit_dist = limit_dist;
-    m_limit_x = limit_x;
-    m_limit_y = limit_y;
+    m_limit_front = limit_front;
+    m_limit_side = limit_side;
     m_limit_ang = limit_ang;
     m_limit_lift = limit_lift;
     
@@ -362,7 +362,7 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
         lin_y = (side_direction / (abs(front_direction) + abs(side_direction)) * max_vel_y);
     }
 
-    float max_yaw = 0.03;
+    float max_yaw = 0.05;
     if( calc_dRad > max_yaw )
     {
         calc_dRad = max_yaw;
@@ -399,11 +399,11 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
         return false;
     }
 
-    fprintf(stderr, "limit_x : %f, limit_y : %f, limit_ang : %f, limit_lift : %f\n", m_limit_x,m_limit_y,m_limit_ang,m_limit_lift);
+    fprintf(stderr, "[ limit_dist : %f, limit_front : %f, limit_side : %f, limit_ang : %f, limit_lift : %f ]\n", m_limit_dist, m_limit_front, m_limit_side, m_limit_ang, m_limit_lift);
 
     static int success_try = 0;
-    if( abs(front_direction) < m_limit_x && 
-        abs(side_direction) < m_limit_y &&
+    if( abs(front_direction) < m_limit_front && 
+        abs(side_direction) < m_limit_side &&
         abs((calc_dRad)*180/3.141592) < m_limit_ang &&
         abs(lift_distance) < m_limit_lift )
     {

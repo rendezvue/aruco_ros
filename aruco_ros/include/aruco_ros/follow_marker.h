@@ -66,8 +66,8 @@ private:
     std_msgs::Bool pub_o_left_lift;
 
     double m_limit_dist = 0.15;
-    double m_limit_x = 0.005;
-    double m_limit_y = 0.005;
+    double m_limit_front = 0.005;
+    double m_limit_side = 0.005;
     double m_limit_ang = 1.0;
     double m_limit_lift = 0.01;
 

@@ -13,8 +13,8 @@
     <arg name="respawn" default="false"/>
 
     <arg name="limit_dist" default="0.15"/>
-    <arg name="limit_x" default="0.005"/>
-    <arg name="limit_y" default="0.005"/>
+    <arg name="limit_front" default="0.005"/>
+    <arg name="limit_side" default="0.005"/>
     <arg name="limit_ang" default="1.0"/>
     <arg name="limit_lift" default="0.01"/>
 
@@ -41,8 +41,8 @@
         <remap from="/image" to="/$(arg camera)/camera/color/image_raw" />
 
         <param name="limit_dist" value="$(arg limit_dist)"/>
-        <param name="limit_x" value="$(arg limit_x)"/>
-        <param name="limit_y" value="$(arg limit_y)"/>
+        <param name="limit_front" value="$(arg limit_front)"/>
+        <param name="limit_side" value="$(arg limit_side)"/>
         <param name="limit_ang" value="$(arg limit_ang)"/>
         <param name="limit_lift" value="$(arg limit_lift)"/>
     </node>
