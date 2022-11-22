@@ -13,6 +13,10 @@
     <arg name="respawn" default="false"/>
 
     <arg name="limit_dist" default="0.15"/>
+    <arg name="limit_x" default="0.005"/>
+    <arg name="limit_y" default="0.005"/>
+    <arg name="limit_ang" default="1.0"/>
+    <arg name="limit_lift" default="0.01"/>
 
     <include file="$(find realsense2_camera)/launch/rs_camera.launch">
         <!-- <arg name="camera" value="$(arg camera)"/> -->
@@ -37,6 +41,10 @@
         <remap from="/image" to="/$(arg camera)/camera/color/image_raw" />
 
         <param name="limit_dist" value="$(arg limit_dist)"/>
+        <param name="limit_x" value="$(arg limit_x)"/>
+        <param name="limit_y" value="$(arg limit_y)"/>
+        <param name="limit_ang" value="$(arg limit_ang)"/>
+        <param name="limit_lift" value="$(arg limit_lift)"/>
     </node>
 
     <!--- Run Rviz-->

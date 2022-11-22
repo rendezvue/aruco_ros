@@ -6,7 +6,7 @@
 
 FollowMarker::FollowMarker()
 {
-    ros::NodeHandle nh;
+    
     srv_QR_localization = nh.advertiseService("service_QR_localization", &FollowMarker::Ros_Srv_FollowInterface, this);
     sub_QR_localization_Request = nh.subscribe("QR_localization_Request", 1, &FollowMarker::Ros_Sub_FollowInterface, this);
     pub_omniwheel_velocity_QR_Marker = nh.advertise<std_msgs::Float32MultiArray>("/omniwheel/velocity", 10);
@@ -150,11 +150,17 @@ bool FollowMarker::Run_FollowMarker()
     }
 }
 
-bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform transform, int marker_id, double limit_dist)
+bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform transform, int marker_id, double limit_dist, double limit_x, double limit_y, double limit_ang, double limit_lift)
 {
     std::string marker_frame_with_id = "marker_frame_";// + "_" + std::to_string(marker_id).c_str();
     
     tf::Transform transform_cam_child;
+
+    m_limit_dist = limit_dist;
+    m_limit_x = limit_x;
+    m_limit_y = limit_y;
+    m_limit_ang = limit_ang;
+    m_limit_lift = limit_lift;
     
     transform_cam_child.setOrigin( tf::Vector3(0.0, 0.0, 0.0) );
     tf::Quaternion q;
@@ -185,7 +191,7 @@ bool FollowMarker::Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform 
         std::string marker_frame_name = marker_frame_with_id+m_camera_child_link_name;
         tf::StampedTransform stampedTransform(transform, ros::Time::now(), m_camera_child_link_name, marker_frame_name);
         br.sendTransform (stampedTransform);
-        Make_Destination_TF(br,marker_frame_name,limit_dist);
+        Make_Destination_TF(br,marker_frame_name,m_limit_dist);
     }
 }
 
@@ -356,7 +362,7 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
         lin_y = (side_direction / (abs(front_direction) + abs(side_direction)) * max_vel_y);
     }
 
-    float max_yaw = 0.02;
+    float max_yaw = 0.03;
     if( calc_dRad > max_yaw )
     {
         calc_dRad = max_yaw;
@@ -373,7 +379,7 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
     fprintf(stderr,"[curtime:%ld] TEST!! %f, %f, %f /  yaw rad(%f) / calcYaw( rad: %f / deg : %f ) , lin_x = %f, lin_y = %f\n",
                 ros::Time::now().toNSec(),
                 //stampedtf_destination.stamp_.toNSec(),
-                front_direction ,side_direction, lift_distance, -yaw, calc_dRad , ((calc_dRad)*180/3.141592),
+                front_direction, side_direction, lift_distance, -yaw, calc_dRad , ((calc_dRad)*180/3.141592),
                 lin_x, lin_y);
 
 
@@ -393,11 +399,13 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
         return false;
     }
 
+    fprintf(stderr, "limit_x : %f, limit_y : %f, limit_ang : %f, limit_lift : %f\n", m_limit_x,m_limit_y,m_limit_ang,m_limit_lift);
+
     static int success_try = 0;
-    if( abs(front_direction) < 0.005 && 
-        abs(side_direction) < 0.005 &&
-        abs((calc_dRad)*180/3.141592) < 1 &&
-        abs(lift_distance) < 0.01 )
+    if( abs(front_direction) < m_limit_x && 
+        abs(side_direction) < m_limit_y &&
+        abs((calc_dRad)*180/3.141592) < m_limit_ang &&
+        abs(lift_distance) < m_limit_lift )
     {
         std_msgs::Float32MultiArray omniwheel_velocity_QR_Marker;  
         omniwheel_velocity_QR_Marker.data.push_back(0);

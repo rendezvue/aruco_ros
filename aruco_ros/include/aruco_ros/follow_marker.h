@@ -26,6 +26,9 @@ enum follow_camera{NONE_CAM, LEFT_CAM, RIGHT_CAM,FRONT_CAM, BACK_CAM, LEFT_LIFT}
 
 class FollowMarker{
 private:
+
+    ros::NodeHandle nh;
+    
     ros::Publisher pub_omniwheel_velocity_QR_Marker;
     ros::Publisher pub_QR_localization_Complete;
     ros::Subscriber sub_QR_localization_Request;
@@ -62,10 +65,16 @@ private:
     std::string sub_o_left_lift;
     std_msgs::Bool pub_o_left_lift;
 
+    double m_limit_dist = 0.15;
+    double m_limit_x = 0.005;
+    double m_limit_y = 0.005;
+    double m_limit_ang = 1.0;
+    double m_limit_lift = 0.01;
+
 public:
     FollowMarker();
     ~FollowMarker();
-    bool Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform, int marker_id, double limit_dist);
+    bool Update_Marker_TF(tf::TransformBroadcaster &br, tf::Transform, int marker_id, double limit_dist, double limit_x, double limit_y, double limit_ang, double limit_lift);
     bool Make_Destination_TF(tf::TransformBroadcaster &br, std::string marker_frame_id, double limit_dist);    
     void Thread_FollowMarker();
 };
