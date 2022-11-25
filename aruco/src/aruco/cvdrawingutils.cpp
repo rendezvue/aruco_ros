@@ -20,7 +20,7 @@ Copyright 2020 Rafael Muñoz Salinas. All rights reserved.
 using namespace cv;
 namespace aruco
 {
-void CvDrawingUtils::draw3dAxis(cv::Mat& Image, const CameraParameters& CP,
+cv::Point2f CvDrawingUtils::draw3dAxis(cv::Mat& Image, const CameraParameters& CP,
                                 const cv::Mat& Rvec, const cv::Mat& Tvec, float axis_size)
 {
   Mat objectPoints(4, 3, CV_32FC1);
@@ -46,13 +46,15 @@ void CvDrawingUtils::draw3dAxis(cv::Mat& Image, const CameraParameters& CP,
   putText(Image, "x", imagePoints[1], FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0, 0, 255, 255), 2);
   putText(Image, "y", imagePoints[2], FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0, 255, 0, 255), 2);
   putText(Image, "z", imagePoints[3], FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 0, 0, 255), 2);
+
+  return imagePoints[0] ;
 }
 /****
  *
  *
  *
  ****/
-void CvDrawingUtils::draw3dAxis(cv::Mat& Image, Marker& m, const CameraParameters& CP, int lineSize)
+cv::Point2f CvDrawingUtils::draw3dAxis(cv::Mat& Image, Marker& m, const CameraParameters& CP, int lineSize)
 {
   float size = m.ssize * 0.6;
   Mat objectPoints(4, 3, CV_32FC1);
@@ -78,6 +80,8 @@ void CvDrawingUtils::draw3dAxis(cv::Mat& Image, Marker& m, const CameraParameter
   putText(Image, "x", imagePoints[1], FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0, 0, 255, 255), 2);
   putText(Image, "y", imagePoints[2], FONT_HERSHEY_SIMPLEX, 0.6, Scalar(0, 255, 0, 255), 2);
   putText(Image, "z", imagePoints[3], FONT_HERSHEY_SIMPLEX, 0.6, Scalar(255, 0, 0, 255), 2);
+
+  return imagePoints[0] ;
 }
 
 /****
