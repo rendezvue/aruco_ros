@@ -1157,11 +1157,27 @@ void MarkerDetector_Impl::detect(const cv::Mat &input, std::vector<Marker> &dete
         if (detectedMarkers[i].id == detectedMarkers[j].id &&
             detectedMarkers[i].dict_info == detectedMarkers[j].dict_info)
         {
+        	//check overlap
+        	cv::Rect rect1 = cv::boundingRect(detectedMarkers[i]) ;
+			cv::Rect rect2 = cv::boundingRect(detectedMarkers[j]) ;
+			
+        	float overlap_rate = Get_2_Rect_Overlap_Rate(rect1, rect2) ;
+			if( overlap_rate > 0.75 )
+			{
+				toRemove[i] = true;
+			}
+			else
+			{
+				toRemove[i] = false;
+			}
+
+		#if 0
           // deletes the one with smaller perimeter
           if (perimeter(detectedMarkers[i]) < perimeter(detectedMarkers[j]))
-            toRemove[i] = true;
+            toRemove[i] = true;s
           else
-            toRemove[j] = false;	//original : true
+            t111111oRemove[j] = false;	//original : true
+		 #endif
         }
       }
     }
@@ -1467,6 +1483,21 @@ int MarkerDetector_Impl::perimeter(const vector<Point2f> &a)
   }
   return sum;
 }
+
+float MarkerDetector_Impl::Get_2_Rect_Overlap_Rate(const cv::Rect r1, const cv::Rect r2)
+{
+	//cv::Rect A(100, 100, 100, 100); //x, y, width, hegiht
+	//cv::Rect B(80, 80, 100, 100); //x, y, width, hegiht
+
+	//printf("intersection area= %d\n", (A&B).area());
+	//printf("union area = %d\n", (A|B).area());
+	//printf("instersection ratio %lf \n", (A&B).area() / float( (A | B).area() ));
+
+	//float ret = (r1&r2).area() / float((r1|r2).area()) ;
+	float ret = (r1&r2).area() / float((r1).area()) ;
+	return ret ;
+}
+
 
 
 /**

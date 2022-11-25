@@ -274,6 +274,7 @@ private:
   /**
    */
   int perimeter(const std::vector<cv::Point2f>& a);
+  float Get_2_Rect_Overlap_Rate(const cv::Rect r1, const cv::Rect r2) ;
 
   // auxiliar functions to perform LINES refinement
   void interpolate2Dline(const std::vector<cv::Point2f>& inPoints, cv::Point3f& outLine);
