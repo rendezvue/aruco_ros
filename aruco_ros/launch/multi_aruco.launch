@@ -6,12 +6,12 @@
     <arg name="rs_back" default="rs_back"/>
     <arg name="respawn" default="true"/>
     <arg name="limit_dist" default="0.15"/>
-    <arg name="limit_front" default="0.005"/>
-    <arg name="limit_side" default="0.005"/>
-    <arg name="limit_ang" default="1.0"/>
+    <arg name="limit_front" default="0.01"/>
+    <arg name="limit_side" default="0.02"/>
+    <arg name="limit_ang" default="2.0"/>
     <arg name="limit_lift" default="0.01"/>
 
-    <!-- <group ns="$(arg rs_left)">
+    <group ns="$(arg rs_left)">
         <param name="tf_prefix" value="$(arg rs_left)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
             <arg name="marker_frame" value="left_marker"/>
@@ -21,8 +21,8 @@
             <arg name="serial_no" value="933322071584"/>
             <arg name="respawn" value="$(arg respawn)"/>
             <arg name="limit_dist" value="$(arg limit_dist)"/>
-            <arg name="limit_x" value="$(arg limit_x)"/>
-            <arg name="limit_y" value="$(arg limit_y)"/>
+            <arg name="limit_front" value="$(arg limit_front)"/>
+            <arg name="limit_side" value="$(arg limit_side)"/>
             <arg name="limit_ang" value="$(arg limit_ang)"/>
             <arg name="limit_lift" value="$(arg limit_lift)"/>
         </include>
@@ -37,14 +37,14 @@
             <arg name="serial_no" value="938422072158"/> 
             <arg name="respawn" value="$(arg respawn)"/>
             <arg name="limit_dist" value="$(arg limit_dist)"/>
-            <arg name="limit_x" value="$(arg limit_x)"/>
-            <arg name="limit_y" value="$(arg limit_y)"/>
+            <arg name="limit_front" value="$(arg limit_front)"/>
+            <arg name="limit_side" value="$(arg limit_side)"/>
             <arg name="limit_ang" value="$(arg limit_ang)"/>
             <arg name="limit_lift" value="$(arg limit_lift)"/>
         </include>
-    </group> -->
+    </group>
    
-    <group ns="$(arg rs_front)">
+    <!-- <group ns="$(arg rs_front)">
         <param name="tf_prefix" value="$(arg rs_front)"/>
         <include file="$(find aruco_ros)/launch/single.launch">
             <arg name="marker_frame" value="front_marker"/>
@@ -75,7 +75,7 @@
             <arg name="limit_ang" value="$(arg limit_ang)"/>
             <arg name="limit_lift" value="$(arg limit_lift)"/>
         </include> 
-    </group>
+    </group> -->
 
     <!-- Run Rviz-->
     <group if="$(arg multi)">
