@@ -5,11 +5,21 @@
     <arg name="rs_front" default="rs_front"/>
     <arg name="rs_back" default="rs_back"/>
     <arg name="respawn" default="true"/>
-    <arg name="limit_dist" default="0.15"/>
+    
+    <!-- child -->
+    <arg name="limit_dist" default="0.13"/>
+    <arg name="limit_front" default="0.008"/>
+    <arg name="limit_side" default="0.008"/>
+    <arg name="limit_ang" default="1.0"/>
+    <arg name="limit_lift" default="3.0"/>
+    <arg name="markerSize" default="0.044"/>
+
+    <!-- rb5 -->
+    <!-- <arg name="limit_dist" default="0.15"/>
     <arg name="limit_front" default="0.01"/>
     <arg name="limit_side" default="0.02"/>
     <arg name="limit_ang" default="2.0"/>
-    <arg name="limit_lift" default="0.01"/>
+    <arg name="limit_lift" default="0.01"/> -->
 
     <group ns="$(arg rs_left)">
         <param name="tf_prefix" value="$(arg rs_left)"/>
