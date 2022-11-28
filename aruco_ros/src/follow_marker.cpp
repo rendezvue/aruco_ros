@@ -380,7 +380,7 @@ bool FollowMarker::Make_Cmd_Vel(tf::Vector3 origin_sum, tf::Quaternion quad_sum,
 
     fprintf(stderr, "\n[ limit_dist : %f, limit_front : %f, limit_side : %f, limit_ang : %f, limit_lift : %f ]\n", m_limit_dist, m_limit_front, m_limit_side, m_limit_ang, m_limit_lift);
 
-    fprintf(stderr,"[curtime:%ld] TEST!! \n lin_x : %f, lin_y : %f, angle : %f\n front_direction : %f, side_direction : %f, lift_distance : %f\n", 
+    fprintf(stderr,"[curtime:%ld] TEST!! \n lin_x : %f, lin_y : %f, angle : %f\n front_direction : %f, side_direction : %f, lift_distance : %f\n\n", 
                     ros::Time::now().toNSec(), lin_x, lin_y, ((calc_dRad)*180/3.141592), front_direction, side_direction, lift_distance, -yaw, calc_dRad);
 
     
